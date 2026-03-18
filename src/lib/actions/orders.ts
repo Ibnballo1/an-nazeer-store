@@ -1,197 +1,293 @@
-// src/lib/actions/orders.ts
 "use server";
 
 import { db } from "@/db";
-import { orders, orderItems, payments } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { orders, orderItems, products } from "@/db/schema";
+import { eq, desc, and, sql, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
-import {
-  generateOrderNumber,
-  generatePaystackReference,
-  initializePayment,
-  verifyPayment,
-} from "@/lib/payments/paystack";
+import { auth } from "@/lib/auth";
+import { requireAdmin } from "../server";
+import { shippingSchema } from "@/lib/validations/checkout";
+import { clearCart } from "./cart";
+import { generateOrderNumber, calculateShippingFee } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import type { ActionResult } from "@/types";
+import type { Order, NewOrder } from "@/db/schema";
+import type { ShippingInput } from "@/lib/validations/checkout";
 
-interface CreateOrderInput {
+// ─────────────────────────────────────────────────────────────────────────────
+// Create order (supports both authenticated users and guests)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type CreateOrderInput = {
+  shipping: ShippingInput;
   items: Array<{
     productId: string;
-    productName: string;
-    productImage?: string;
     quantity: number;
-    unitPrice: number;
   }>;
-  shippingName: string;
-  shippingEmail: string;
-  shippingPhone: string;
-  shippingAddress: string;
-  shippingCity: string;
-  shippingState: string;
-  notes?: string;
-  // guest fields
-  guestName?: string;
-  guestEmail?: string;
-  guestPhone?: string;
-}
+  customerNote?: string;
+};
 
-export async function createOrder(input: CreateOrderInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const userId = session?.user?.id ?? null;
+export type OrderCreated = {
+  orderId: string;
+  orderNumber: string;
+  total: number;
+};
 
-  const subtotal = input.items.reduce(
-    (sum, i) => sum + i.unitPrice * i.quantity,
-    0,
-  );
-  const shippingCost = subtotal >= 20000 ? 0 : 1500; // free shipping above ₦20k
-  const total = subtotal + shippingCost;
-
-  const orderNumber = generateOrderNumber();
-  const paystackRef = generatePaystackReference();
-
-  // Create order
-  const [order] = await db
-    .insert(orders)
-    .values({
-      orderNumber,
-      userId,
-      guestName: input.guestName,
-      guestEmail: input.guestEmail,
-      guestPhone: input.guestPhone,
-      shippingName: input.shippingName,
-      shippingEmail: input.shippingEmail,
-      shippingPhone: input.shippingPhone,
-      shippingAddress: input.shippingAddress,
-      shippingCity: input.shippingCity,
-      shippingState: input.shippingState,
-      subtotal: subtotal.toString(),
-      shippingCost: shippingCost.toString(),
-      total: total.toString(),
-      notes: input.notes,
-    })
-    .returning();
-
-  // Create order items
-  await db.insert(orderItems).values(
-    input.items.map((item) => ({
-      orderId: order.id,
-      productId: item.productId,
-      productName: item.productName,
-      productImage: item.productImage,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice.toString(),
-      totalPrice: (item.unitPrice * item.quantity).toString(),
-    })),
-  );
-
-  // Create pending payment record
-  await db.insert(payments).values({
-    orderId: order.id,
-    paystackReference: paystackRef,
-    amount: total.toString(),
-    currency: "NGN",
-    status: "pending",
-  });
-
-  // Initialize Paystack
-  const paystackInit = await initializePayment({
-    email: input.shippingEmail,
-    amount: total,
-    reference: paystackRef,
-    metadata: {
-      orderId: order.id,
-      orderNumber,
-      customerName: input.shippingName,
-    },
-  });
-
-  return {
-    orderId: order.id,
-    orderNumber,
-    authorizationUrl: paystackInit.data.authorization_url,
-  };
-}
-
-export async function verifyOrderPayment(reference: string) {
-  const verification = await verifyPayment(reference);
-
-  if (!verification.status || verification.data.status !== "success") {
-    return { success: false, message: "Payment verification failed" };
+export async function createOrder(
+  input: CreateOrderInput,
+): Promise<ActionResult<OrderCreated>> {
+  // Validate shipping details
+  const shippingParsed = shippingSchema.safeParse(input.shipping);
+  if (!shippingParsed.success) {
+    return { success: false, error: shippingParsed.error.issues[0].message };
   }
 
-  // Update payment record
-  await db
-    .update(payments)
-    .set({
-      status: "paid",
-      paystackTransactionId: verification.data.id.toString(),
-      channel: verification.data.channel,
-      paidAt: new Date(verification.data.paid_at),
-      updatedAt: new Date(),
-    })
-    .where(eq(payments.paystackReference, reference));
+  if (!input.items.length) {
+    return { success: false, error: "Your cart is empty." };
+  }
 
-  // Get order from payment
-  const [payment] = await db
-    .select()
-    .from(payments)
-    .where(eq(payments.paystackReference, reference));
+  // Get current session (may be null for guests)
+  const session = await auth.api.getSession({ headers: await headers() });
+  const userId = session?.user.id ?? null;
 
-  if (payment) {
-    await db
-      .update(orders)
-      .set({
-        paymentStatus: "paid",
-        status: "confirmed",
-        updatedAt: new Date(),
-      })
-      .where(eq(orders.id, payment.orderId));
+  // Fetch product data and validate stock
+  const productIds = input.items.map((i) => i.productId);
+  const dbProducts = await db.query.products.findMany({
+    where: (p, { inArray, isNull, eq, and }) =>
+      and(
+        inArray(p.id, productIds),
+        eq(p.status, "active"),
+        isNull(p.deletedAt),
+      ),
+  });
+
+  if (dbProducts.length !== input.items.length) {
+    return { success: false, error: "One or more products are unavailable." };
+  }
+
+  // Validate stock for each item
+  for (const item of input.items) {
+    const product = dbProducts.find((p) => p.id === item.productId);
+    if (!product) {
+      return { success: false, error: "Product not found." };
+    }
+    if (product.trackInventory && !product.allowBackorder) {
+      if (item.quantity > product.stock) {
+        return {
+          success: false,
+          error: `"${product.name}" only has ${product.stock} unit(s) in stock.`,
+        };
+      }
+    }
+  }
+
+  // Calculate totals
+  const subtotal = input.items.reduce((sum, item) => {
+    const product = dbProducts.find((p) => p.id === item.productId)!;
+    return sum + Number(product.price) * item.quantity;
+  }, 0);
+
+  const shippingFee = calculateShippingFee(shippingParsed.data.state);
+  const total = subtotal + shippingFee;
+  const orderNumber = generateOrderNumber();
+  const shipping = shippingParsed.data;
+
+  try {
+    // Create order + items in a transaction
+    const [order] = await db.transaction(async (tx) => {
+      // Insert order
+      const [newOrder] = await tx
+        .insert(orders)
+        .values({
+          orderNumber,
+          userId,
+          // Guest fields
+          guestEmail: !userId ? shipping.email : null,
+          guestName: !userId ? shipping.name : null,
+          guestPhone: !userId ? shipping.phone : null,
+          // Shipping snapshot
+          shippingName: shipping.name,
+          shippingEmail: shipping.email,
+          shippingPhone: shipping.phone,
+          shippingAddress: shipping.address,
+          shippingCity: shipping.city,
+          shippingState: shipping.state,
+          shippingCountry: shipping.country ?? "Nigeria",
+          // Totals
+          subtotal: String(subtotal),
+          shippingFee: String(shippingFee),
+          total: String(total),
+          customerNote: input.customerNote,
+          status: "pending",
+          paymentStatus: "pending",
+        } satisfies Omit<NewOrder, "id" | "createdAt" | "updatedAt">)
+        .returning();
+
+      // Insert order items
+      await tx.insert(orderItems).values(
+        input.items.map((item) => {
+          const product = dbProducts.find((p) => p.id === item.productId)!;
+          return {
+            orderId: newOrder.id,
+            productId: product.id,
+            productName: product.name,
+            productImage: product.thumbnailUrl,
+            productSlug: product.slug,
+            quantity: item.quantity,
+            unitPrice: product.price,
+            subtotal: String(Number(product.price) * item.quantity),
+          };
+        }),
+      );
+
+      // Decrement stock for each product
+      for (const item of input.items) {
+        const product = dbProducts.find((p) => p.id === item.productId)!;
+        if (product.trackInventory) {
+          await tx
+            .update(products)
+            .set({
+              stock: sql`GREATEST(0, ${products.stock} - ${item.quantity})`,
+              updatedAt: new Date(),
+            })
+            .where(eq(products.id, product.id));
+        }
+      }
+
+      return [newOrder];
+    });
+
+    // Clear the cart cookie
+    await clearCart();
 
     revalidatePath("/admin/orders");
 
-    const [order] = await db
-      .select()
-      .from(orders)
-      .where(eq(orders.id, payment.orderId));
+    return {
+      success: true,
+      data: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        total,
+      },
+    };
+  } catch (err) {
+    console.error("[createOrder]", err);
+    return {
+      success: false,
+      error: "Failed to place order. Please try again.",
+    };
+  }
+}
 
-    return { success: true, order };
+// ─────────────────────────────────────────────────────────────────────────────
+// Get order by ID (with items) — owner or admin only
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getOrderById(orderId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  const order = await db.query.orders.findFirst({
+    where: eq(orders.id, orderId),
+    with: { items: true, payments: true },
+  });
+
+  if (!order) return null;
+
+  // Allow: admin, order owner, or guest (identified by matching email in session)
+  const isOwner = session?.user.id && order.userId === session.user.id;
+  const isAdmin = session?.user.role === "admin";
+  const isGuest = !order.userId; // guest orders are accessible via link
+
+  if (!isOwner && !isAdmin && !isGuest) return null;
+
+  return order;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Get orders for the current logged-in user
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getUserOrders() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return [];
+
+  return db.query.orders.findMany({
+    where: eq(orders.userId, session.user.id),
+    orderBy: [desc(orders.createdAt)],
+    with: { items: true },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN — Get all orders with pagination
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getAllOrders(opts: {
+  page?: number;
+  status?: string;
+  search?: string;
+}) {
+  await requireAdmin();
+
+  const page = Math.max(1, opts.page ?? 1);
+  const pageSize = 20;
+  const offset = (page - 1) * pageSize;
+
+  const conditions: ReturnType<typeof eq>[] = [];
+
+  if (opts.status) {
+    conditions.push(eq(orders.status, opts.status as Order["status"]));
   }
 
-  return { success: false, message: "Order not found" };
-}
+  const rows = await db.query.orders.findMany({
+    where: conditions.length ? and(...conditions) : undefined,
+    orderBy: [desc(orders.createdAt)],
+    limit: pageSize,
+    offset,
+    with: { items: true, payments: true },
+  });
 
-export async function getUserOrders(userId: string) {
-  return db
-    .select()
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
     .from(orders)
-    .where(eq(orders.userId, userId))
-    .orderBy(desc(orders.createdAt));
+    .where(conditions.length ? and(...conditions) : undefined);
+
+  return {
+    data: rows,
+    total: count,
+    page,
+    pageSize,
+    totalPages: Math.ceil(count / pageSize),
+  };
 }
 
-export async function adminGetAllOrders() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if ((session?.user as any)?.role !== "admin") throw new Error("Unauthorized");
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN — Update order status
+// ─────────────────────────────────────────────────────────────────────────────
 
-  return db.select().from(orders).orderBy(desc(orders.createdAt));
-}
-
-export async function adminUpdateOrderStatus(
+export async function updateOrderStatus(
   orderId: string,
-  status:
-    | "pending"
-    | "confirmed"
-    | "processing"
-    | "shipped"
-    | "delivered"
-    | "cancelled",
-) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if ((session?.user as any)?.role !== "admin") throw new Error("Unauthorized");
+  status: Order["status"],
+  trackingNumber?: string,
+): Promise<ActionResult> {
+  await requireAdmin();
 
-  await db
-    .update(orders)
-    .set({ status, updatedAt: new Date() })
-    .where(eq(orders.id, orderId));
+  try {
+    await db
+      .update(orders)
+      .set({
+        status,
+        ...(trackingNumber ? { trackingNumber } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId));
 
-  revalidatePath("/admin/orders");
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${orderId}`);
+
+    return { success: true, data: undefined };
+  } catch (err) {
+    console.error("[updateOrderStatus]", err);
+    return { success: false, error: "Failed to update order status." };
+  }
 }

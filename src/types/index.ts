@@ -1,33 +1,38 @@
-// src/types/index.ts
-// Augment BetterAuth's User type to include our custom fields
+export type ActionResult<T = void> =
+  | { success: true; data: T }
+  | { success: false; error: string };
 
-import type { Session, User } from "better-auth";
-
-declare module "better-auth" {
-  interface User {
-    role: "user" | "admin";
-    phone?: string;
-  }
-}
-
-// ── Re-exports for convenience ─────────────────────────────────────────────────
-export type { Session, User };
-
-// ── Cart ───────────────────────────────────────────────────────────────────────
-export interface CartItem {
-  id: string;
+export type CartItem = {
+  productId: string;
   name: string;
   price: number;
-  image: string;
   quantity: number;
-  stock: number;
+  image: string | null;
   slug: string;
-}
+  stock: number;
+  unit: string | null;
+};
 
-// ── API responses ──────────────────────────────────────────────────────────────
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-}
+export type Cart = {
+  items: CartItem[];
+  subtotal: number;
+  itemCount: number;
+};
+
+export type PaginatedResult<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type ShippingAddress = {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+};
