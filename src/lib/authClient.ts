@@ -1,18 +1,9 @@
-// src/lib/auth/auth-client.ts
+"use client";
+
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL,
-  user: {
-    additionalFields: {
-      role: {
-        type: "string",
-      },
-      phone: {
-        type: "string",
-      },
-    },
-  },
+  baseURL: process.env.NEXT_PUBLIC_APP_URL!,
 });
 
-export const { signIn, signOut, signUp, useSession, getSession } = authClient;
+export const { signIn, signUp, signOut, useSession, getSession } = authClient;

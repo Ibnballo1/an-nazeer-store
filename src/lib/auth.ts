@@ -1,54 +1,86 @@
-// src/lib/auth/auth.ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db";
-import { user, sessions, accounts, verifications } from "@/db/schema";
+import * as schema from "@/db/schema";
 
 export const auth = betterAuth({
+  // ── Database ─────────────────────────────────────────────────────────────
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
-      user: user,
-      session: sessions,
-      account: accounts,
-      verification: verifications,
+      user: schema.user,
+      session: schema.sessions,
+      account: schema.accounts,
+      verification: schema.verifications,
     },
   }),
+
+  // ── App URL ───────────────────────────────────────────────────────────────
+  baseURL: process.env.BETTER_AUTH_URL!,
+  secret: process.env.BETTER_AUTH_SECRET!,
+
+  // ── Email & Password ──────────────────────────────────────────────────────
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: false, // set true in production with mailer
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
   },
+
+  // ── Session ───────────────────────────────────────────────────────────────
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // refresh every 24h
+    expiresIn: 60 * 60 * 24 * 30, // 30 days
+    updateAge: 60 * 60 * 24, // Refresh if older than 1 day
     cookieCache: {
       enabled: true,
-      maxAge: 60 * 5,
+      maxAge: 60 * 5, // 5-minute cookie cache
     },
   },
+
+  // ── Extra User Fields ─────────────────────────────────────────────────────
   user: {
     additionalFields: {
-      phone: { type: "string", required: false },
-      role: { type: "string", required: false, defaultValue: "customer" },
-      defaultAddress: { type: "string", required: false },
-      defaultCity: { type: "string", required: false },
-      defaultState: { type: "string", required: false },
-      deletedAt: { type: "date", required: false },
+      phone: {
+        type: "string",
+        required: false,
+      },
+      role: {
+        type: "string",
+        required: true,
+        defaultValue: "customer",
+      },
+      defaultAddress: {
+        type: "string",
+        required: false,
+      },
+      defaultCity: {
+        type: "string",
+        required: false,
+      },
+      defaultState: {
+        type: "string",
+        required: false,
+      },
+      deletedAt: {
+        type: "date",
+        required: false,
+      },
     },
   },
-  //   sendVerificationOTP: async ({ identifier, otp }) => {
-  //     await resend.emails.send({
-  //  from: "Acme <onboarding@resend.dev>",
-  //  to: user.email,
-  //  subject: "Your Password Reset Code",
-  //  html: `<p>Your OTP is: <b>${otp}</b></p>`,
-  // });
-  //     // For simplicity, we're just logging the OTP here.
-  //     // In a real app, you'd send this via email or SMS.
-  //     console.log(`Send OTP ${otp} to ${identifier}`);
-  //   },
-  trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL!],
+
+  // ── Cookies ───────────────────────────────────────────────────────────────
+  advanced: {
+    cookiePrefix: "an-nazeer",
+    useSecureCookies: process.env.NODE_ENV === "production",
+    defaultCookieAttributes: {
+      sameSite: "lax",
+      httpOnly: true,
+      path: "/",
+    },
+  },
 });
 
+// Exported type helpers
 export type Session = typeof auth.$Infer.Session;
-export type AuthUser = typeof auth.$Infer.Session.user;
+export type User = typeof schema.user.$inferSelect;
+// export type User = typeof auth.$Infer.Session.user;
