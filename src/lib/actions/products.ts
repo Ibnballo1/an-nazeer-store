@@ -12,6 +12,7 @@ import { headers } from "next/headers";
 
 export async function getProducts(params?: {
   categorySlug?: string;
+  categoryId?: string;
   search?: string;
   featured?: boolean;
   limit?: number;
@@ -36,6 +37,10 @@ export async function getProducts(params?: {
       .where(eq(categories.slug, params.categorySlug))
       .limit(1);
     if (cat[0]) conditions.push(eq(products.categoryId, cat[0].id));
+  }
+
+  if (params?.categoryId) {
+    conditions.push(eq(products.categoryId, params.categoryId));
   }
 
   const query = db

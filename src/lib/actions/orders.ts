@@ -4,7 +4,7 @@
 import { db } from "@/db";
 import { orders, orderItems, payments } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { auth } from "../auth";
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import {
   generateOrderNumber,
@@ -36,9 +36,7 @@ interface CreateOrderInput {
 }
 
 export async function createOrder(input: CreateOrderInput) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id ?? null;
 
   const subtotal = input.items.reduce(
@@ -171,10 +169,8 @@ export async function getUserOrders(userId: string) {
 }
 
 export async function adminGetAllOrders() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  if (session?.user?.role !== "admin") throw new Error("Unauthorized");
+  const session = await auth.api.getSession({ headers: await headers() });
+  if ((session?.user as any)?.role !== "admin") throw new Error("Unauthorized");
 
   return db.select().from(orders).orderBy(desc(orders.createdAt));
 }
@@ -189,10 +185,8 @@ export async function adminUpdateOrderStatus(
     | "delivered"
     | "cancelled",
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  if (session?.user?.role !== "admin") throw new Error("Unauthorized");
+  const session = await auth.api.getSession({ headers: await headers() });
+  if ((session?.user as any)?.role !== "admin") throw new Error("Unauthorized");
 
   await db
     .update(orders)

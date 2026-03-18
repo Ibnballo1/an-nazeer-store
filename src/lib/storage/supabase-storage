@@ -1,0 +1,52 @@
+// src/lib/storage/supabase-storage.ts
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+// Server-side client with full permissions
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+// Public bucket name — create this in your Supabase dashboard
+const BUCKET = "product-images";
+
+/**
+ * Upload a product image to Supabase Storage.
+ * Returns the public URL on success.
+ */
+export async function uploadProductImage(
+  file: File,
+  productSlug: string
+): Promise<string> {
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const fileName = `${productSlug}/${Date.now()}.${ext}`;
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .upload(fileName, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type,
+    });
+
+  if (error) throw new Error(`Upload failed: ${error.message}`);
+
+  const { data: urlData } = supabaseAdmin.storage
+    .from(BUCKET)
+    .getPublicUrl(data.path);
+
+  return urlData.publicUrl;
+}
+
+/**
+ * Delete a product image from Supabase Storage.
+ */
+export async function deleteProductImage(publicUrl: string): Promise<void> {
+  // Extract path from URL: https://[ref].supabase.co/storage/v1/object/public/product-images/[path]
+  const url = new URL(publicUrl);
+  const pathParts = url.pathname.split(`/object/public/${BUCKET}/`);
+  if (pathParts.length < 2) return;
+
+  const filePath = pathParts[1];
+  await supabaseAdmin.storage.from(BUCKET).remove([filePath]);
+}

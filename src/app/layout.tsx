@@ -1,8 +1,7 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans } from "next/font/google";
-import "./globals.css";
 import { Toaster } from "sonner";
+import "./globals.css";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -18,24 +17,22 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "An-Nazeer Holistic Home Ltd | Natural Wellness & Herbal Products",
+    default: "An-Nazeer Holistic Home | Natural Herbal Wellness",
     template: "%s | An-Nazeer Holistic Home",
   },
   description:
-    "Certified herbal and natural wellness brand offering natural remedies, NAFDAC-approved food spices, beauty products, and herbal solutions. Trusted by thousands across Nigeria.",
+    "Nigeria's trusted herbal wellness brand. NAFDAC-approved natural remedies, food spices, beauty products, and health consultations.",
   keywords: [
-    "herbal products Nigeria",
-    "natural wellness",
-    "NAFDAC approved spices",
-    "gorontula",
-    "natural remedies",
-    "herbal medicine Nigeria",
-    "An-Nazeer",
+    "herbal wellness Nigeria",
+    "NAFDAC approved herbal products",
+    "natural remedies Nigeria",
+    "gorontula seed syrup",
+    "herbal beauty products",
   ],
   openGraph: {
-    siteName: "An-Nazeer Holistic Home Ltd",
     type: "website",
     locale: "en_NG",
+    siteName: "An-Nazeer Holistic Home",
   },
 };
 
@@ -45,10 +42,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
-      <body className="font-sans antialiased bg-stone-50 text-stone-900">
+    <html
+      lang="en"
+      className={`${playfair.variable} ${dmSans.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen flex flex-col">
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster />
       </body>
     </html>
   );

@@ -1,69 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSessionCookie } from "better-auth/cookies";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-// Routes that require a logged-in user
-const PROTECTED_USER_ROUTES = ["/account", "/account/orders"];
+const ADMIN_PATHS = ["/admin"];
+const AUTH_PATHS = ["/login", "/register"];
 
-// Routes that require admin role — checked server-side in the page itself,
-// but we still want to redirect unauthenticated users immediately
-const PROTECTED_ADMIN_ROUTES = [
-  "/admin/dashboard",
-  "/admin/products",
-  "/admin/orders",
-  "/admin/customers",
-  "/admin/categories",
-  "/admin/consultations",
-];
-
-// Routes that should redirect to home when already logged in
-const AUTH_ROUTES = ["/login", "/register"];
-
-export async function proxy(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const sessionToken =
+    request.cookies.get("better-auth.session_token")?.value ??
+    request.cookies.get("__Secure-better-auth.session_token")?.value;
 
-  // Read the session cookie (BetterAuth sets "better-auth.session_token")
-  const sessionCookie = getSessionCookie(request);
-  const isLoggedIn = Boolean(sessionCookie);
-
-  // ── Redirect logged-in users away from auth pages ──────────────────────────
-  if (AUTH_ROUTES.some((r) => pathname.startsWith(r)) && isLoggedIn) {
-    const redirectTo = request.nextUrl.searchParams.get("redirect") ?? "/";
-    return NextResponse.redirect(new URL(redirectTo, request.url));
+  // Redirect authenticated users away from auth pages
+  if (AUTH_PATHS.some((p) => pathname.startsWith(p)) && sessionToken) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // ── Protect user-only routes ────────────────────────────────────────────────
-  if (
-    PROTECTED_USER_ROUTES.some((r) => pathname.startsWith(r)) &&
-    !isLoggedIn
-  ) {
-    const url = new URL("/login", request.url);
-    url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  // ── Protect admin routes ────────────────────────────────────────────────────
-  if (
-    PROTECTED_ADMIN_ROUTES.some((r) => pathname.startsWith(r)) &&
-    !isLoggedIn
-  ) {
-    const url = new URL("/login", request.url);
-    url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
+  // Protect admin routes
+  if (ADMIN_PATHS.some((p) => pathname.startsWith(p))) {
+    if (!sessionToken) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    // Role check happens server-side in layout
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all paths except:
-     * - _next/static  (static files)
-     * - _next/image   (image optimisation)
-     * - favicon.ico
-     * - public folder files
-     * - api routes (handled separately)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth).*)"],
 };

@@ -28,17 +28,25 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      role: {
-        type: "string",
-        defaultValue: "user",
-        input: false, // not user-settable
-      },
-      phone: {
-        type: "string",
-        required: false,
-      },
+      phone: { type: "string", required: false },
+      role: { type: "string", required: false, defaultValue: "customer" },
+      defaultAddress: { type: "string", required: false },
+      defaultCity: { type: "string", required: false },
+      defaultState: { type: "string", required: false },
+      deletedAt: { type: "date", required: false },
     },
   },
+  //   sendVerificationOTP: async ({ identifier, otp }) => {
+  //     await resend.emails.send({
+  //  from: "Acme <onboarding@resend.dev>",
+  //  to: user.email,
+  //  subject: "Your Password Reset Code",
+  //  html: `<p>Your OTP is: <b>${otp}</b></p>`,
+  // });
+  //     // For simplicity, we're just logging the OTP here.
+  //     // In a real app, you'd send this via email or SMS.
+  //     console.log(`Send OTP ${otp} to ${identifier}`);
+  //   },
   trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL!],
 });
 

@@ -20,18 +20,7 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const itemCount = useCartStore((s) => s.getItemCount());
-  const { data: session } = useSession() as {
-    data: {
-      user: {
-        id: string;
-        email: string;
-        name: string;
-        role?: string; // Add this!
-        image?: string | null;
-      };
-      session: any;
-    } | null;
-  };
+  const { data: session } = useSession();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -115,7 +104,7 @@ export function Navbar() {
 
             {session ? (
               <div className="hidden md:flex items-center gap-2">
-                {session.user.role === "admin" && (
+                {(session.user as any).role === "admin" && (
                   <Link
                     href="/admin/dashboard"
                     className="text-xs font-medium px-3 py-1.5 bg-[#0f7a3a] text-white rounded-full hover:bg-[#0a5c2c] transition-colors"

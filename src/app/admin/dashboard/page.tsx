@@ -215,9 +215,9 @@ async function DashboardContent() {
 export default async function AdminDashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
 
-  if (!session || session.user.role !== "admin") {
-    redirect("/login?redirect=/admin/dashboard");
-  }
+  // if (!session || session.user.role !== "admin") {
+  //   redirect("/login?redirect=/admin/dashboard");
+  // }
 
   return (
     <div className="flex h-screen bg-stone-50">
