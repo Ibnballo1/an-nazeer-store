@@ -7,7 +7,7 @@ export const shippingSchema = z.object({
   address: z.string().min(5, "Address is required"),
   city: z.string().min(2, "City is required"),
   state: z.string().min(2, "State is required"),
-  country: z.string().default("Nigeria"),
+  country: z.string().default("Nigeria").optional(),
 });
 
 export const guestCheckoutSchema = shippingSchema;

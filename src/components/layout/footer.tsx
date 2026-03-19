@@ -1,85 +1,107 @@
-// src/components/layout/footer.tsx
 import Link from "next/link";
-import { Leaf, Phone, Mail, MapPin, MessageCircle } from "lucide-react";
+import { Leaf, Phone, Mail, MapPin } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="bg-stone-900 text-stone-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+    <footer className="bg-brand-black text-white">
+      <div className="container-safe py-12 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 bg-[#0f7a3a] rounded-full flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-white" />
+              <div className="h-9 w-9 bg-brand-green rounded-xl flex items-center justify-center">
+                <Leaf className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="font-display text-white font-bold text-sm">
+                <p className="font-display font-bold text-white leading-none">
                   An-Nazeer
-                </div>
-                <div className="text-[10px] tracking-widest text-stone-500 uppercase">
-                  Holistic Home
-                </div>
+                </p>
+                <p className="text-[11px] text-white/50 leading-none mt-0.5">
+                  Holistic Home Ltd
+                </p>
               </div>
             </div>
-            <p className="text-sm text-stone-400 leading-relaxed mb-4">
-              Certified herbal and natural wellness brand serving Nigeria with
-              quality, integrity, and care.
+            <p className="text-sm text-white/60 leading-relaxed mb-4">
+              Nigeria&apos;s trusted herbal wellness brand. NAFDAC-approved
+              natural remedies, beauty products, and health consultations.
             </p>
-            <a
-              href="https://wa.me/2348000000000"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#25D366] text-white text-xs font-semibold px-4 py-2 rounded-full hover:bg-[#22c35e] transition-colors"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              WhatsApp Us
-            </a>
+            <div className="flex gap-3">
+              {[
+                { href: "https://instagram.com", label: "IG" },
+                { href: "https://facebook.com", label: "FB" },
+                { href: "https://twitter.com", label: "TW" },
+              ].map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center text-xs font-bold text-white/70 hover:bg-brand-green hover:text-white transition-colors"
+                >
+                  {s.label}
+                </a>
+              ))}
+            </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Shop */}
           <div>
-            <h3 className="text-white font-semibold text-sm mb-4">
-              Quick Links
-            </h3>
+            <h4 className="font-display font-semibold text-white mb-4">Shop</h4>
             <ul className="space-y-2.5">
               {[
-                { href: "/shop", label: "Shop" },
-                { href: "/about", label: "About Us" },
-                { href: "/contact", label: "Contact" },
-                { href: "/contact#consultation", label: "Consultation" },
-              ].map((link) => (
-                <li key={link.href}>
+                {
+                  href: "/shop?category=natural-remedies",
+                  label: "Natural Remedies",
+                },
+                { href: "/shop?category=food-spices", label: "Food Spices" },
+                {
+                  href: "/shop?category=beauty-skincare",
+                  label: "Beauty & Skincare",
+                },
+                {
+                  href: "/shop?category=gorontula",
+                  label: "Gorontula Products",
+                },
+                {
+                  href: "/shop?category=natural-aphrodisiacs",
+                  label: "Aphrodisiacs",
+                },
+                {
+                  href: "/shop?category=wellness-solutions",
+                  label: "Wellness Solutions",
+                },
+              ].map((l) => (
+                <li key={l.href}>
                   <Link
-                    href={link.href}
-                    className="text-sm hover:text-[#0f7a3a] transition-colors"
+                    href={l.href}
+                    className="text-sm text-white/60 hover:text-brand-green transition-colors"
                   >
-                    {link.label}
+                    {l.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Company */}
           <div>
-            <h3 className="text-white font-semibold text-sm mb-4">
-              Categories
-            </h3>
+            <h4 className="font-display font-semibold text-white mb-4">
+              Company
+            </h4>
             <ul className="space-y-2.5">
               {[
-                "Herbs",
-                "Food Spices",
-                "Beauty Products",
-                "Gorontula Products",
-                "Wellness Remedies",
-              ].map((cat) => (
-                <li key={cat}>
+                { href: "/about", label: "About Us" },
+                { href: "/contact", label: "Contact" },
+                { href: "/contact#consultation", label: "Book Consultation" },
+                { href: "/contact#training", label: "Herbal Training" },
+                { href: "/account/orders", label: "Track Order" },
+              ].map((l) => (
+                <li key={l.href}>
                   <Link
-                    href={`/shop?category=${cat.toLowerCase().replace(/ /g, "-")}`}
-                    className="text-sm hover:text-[#0f7a3a] transition-colors"
+                    href={l.href}
+                    className="text-sm text-white/60 hover:text-brand-green transition-colors"
                   >
-                    {cat}
+                    {l.label}
                   </Link>
                 </li>
               ))}
@@ -88,30 +110,51 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="text-white font-semibold text-sm mb-4">Contact</h3>
+            <h4 className="font-display font-semibold text-white mb-4">
+              Contact
+            </h4>
             <ul className="space-y-3">
-              <li className="flex items-start gap-2 text-sm">
-                <Phone className="w-4 h-4 text-[#0f7a3a] shrink-0 mt-0.5" />
-                <span>+234 800 000 0000</span>
+              <li className="flex items-start gap-3">
+                <Phone className="h-4 w-4 text-brand-green mt-0.5 shrink-0" />
+
+                <a
+                  href={`tel:+${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}`}
+                  className="text-sm text-white/60 hover:text-white transition-colors"
+                >
+                  +234 801 234 5678
+                </a>
               </li>
-              <li className="flex items-start gap-2 text-sm">
-                <Mail className="w-4 h-4 text-[#0f7a3a] shrink-0 mt-0.5" />
-                <span>info@annazeer.com</span>
+              <li className="flex items-start gap-3">
+                <Mail className="h-4 w-4 text-brand-green mt-0.5 shrink-0" />
+                <a
+                  href="mailto:hello@an-nazeer.com"
+                  className="text-sm text-white/60 hover:text-white transition-colors"
+                >
+                  hello@an-nazeer.com
+                </a>
               </li>
-              <li className="flex items-start gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-[#0f7a3a] shrink-0 mt-0.5" />
-                <span>Nigeria</span>
+              <li className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 text-brand-green mt-0.5 shrink-0" />
+                <span className="text-sm text-white/60">Lagos, Nigeria</span>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-stone-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
-          <p>
+        {/* Bottom bar */}
+        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-white/40">
             © {new Date().getFullYear()} An-Nazeer Holistic Home Ltd. All rights
             reserved.
           </p>
-          <p>NAFDAC Approved | Certified Herbal Practitioners</p>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-brand-green font-medium">
+              NAFDAC Approved ✓
+            </span>
+            <span className="text-xs text-white/40">
+              NGN Payments via Paystack
+            </span>
+          </div>
         </div>
       </div>
     </footer>

@@ -459,43 +459,31 @@ export const reviews = pgTable(
 // CONSULTATION REQUESTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const consultationRequests = pgTable(
-  "consultation_requests",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: text("user_id").references(() => user.id, {
-      onDelete: "set null",
-    }),
+export const consultationRequests = pgTable("consultation_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
 
-    name: varchar("name", { length: 255 }).notNull(),
-    email: varchar("email", { length: 255 }).notNull(),
-    phone: varchar("phone", { length: 20 }),
-    subject: varchar("subject", { length: 255 }),
-    message: text("message").notNull(),
+  // Add these fields to match your input
+  age: integer("age"),
+  gender: varchar("gender", { length: 50 }),
+  healthChallenge: text("health_challenge"), // Renamed from healthConcern to match your logic
+  currentMedications: text("current_medications"),
+  allergies: text("allergies"),
 
-    // Health context
-    healthConcern: text("health_concern"),
-    preferredContact: varchar("preferred_contact", { length: 20 })
-      .notNull()
-      .default("email"), // 'email' | 'phone' | 'whatsapp'
-    preferredTime: varchar("preferred_time", { length: 100 }),
-
-    status: consultationStatusEnum("status").notNull().default("pending"),
-    adminNotes: text("admin_notes"),
-
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (t) => ({
-    userIdx: index("consultations_user_idx").on(t.userId),
-    statusIdx: index("consultations_status_idx").on(t.status),
-    emailIdx: index("consultations_email_idx").on(t.email),
-  }),
-);
+  // Existing fields
+  message: text("message").notNull().default(""), // Added default or handle in insert
+  status: consultationStatusEnum("status").notNull().default("pending"),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RELATIONS
