@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { orders, products, user, consultationRequests } from "@/db/schema";
-import { eq, sql, gte, and, isNull } from "drizzle-orm";
+import { eq, sql, gte, and, isNull, desc } from "drizzle-orm";
 import { requireAdmin } from "../server";
 
 export async function getDashboardStats() {
@@ -88,4 +88,14 @@ export async function getDashboardStats() {
     totalCustomers: totalCustomers[0].count,
     pendingConsultations: pendingConsultations[0].count,
   };
+}
+
+export async function getRecentOrders(limit = 8) {
+  await requireAdmin();
+
+  return db.query.orders.findMany({
+    orderBy: [desc(orders.createdAt)],
+    limit,
+    with: { items: true },
+  });
 }

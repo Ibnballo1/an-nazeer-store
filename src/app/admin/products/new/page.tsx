@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getCategories } from "@/lib/actions/products";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminProductForm } from "@/components/admin/admin-product-form";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -27,7 +27,9 @@ export default async function NewProductPage() {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             Back to Products
           </Link>
-          <h1 className="font-display text-2xl font-bold text-stone-900">Add New Product</h1>
+          <h1 className="font-display text-2xl font-bold text-stone-900">
+            Add New Product
+          </h1>
         </div>
         <AdminProductForm categories={categories} />
       </main>

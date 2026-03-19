@@ -1,17 +1,14 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { Metadata } from "next";
 import { db } from "@/db";
 import { user, orders } from "@/db/schema";
-import { eq, count, desc } from "drizzle-orm";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import { Users, User } from "lucide-react";
+import { eq, desc, isNull, and, sql } from "drizzle-orm";
+import { requireAdmin } from "@/lib/server";
+import { Badge } from "@/components/ui/badge";
+
+export const metadata: Metadata = { title: "Customers — Admin" };
 
 export default async function AdminCustomersPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") {
-    redirect("/login?redirect=/admin/customers");
-  }
+  await requireAdmin();
 
   const customers = await db
     .select({
@@ -21,97 +18,90 @@ export default async function AdminCustomersPage() {
       phone: user.phone,
       role: user.role,
       createdAt: user.createdAt,
+      orderCount: sql<number>`count(${orders.id})::int`,
     })
     .from(user)
-    .where(eq(user.role, "user"))
+    .leftJoin(orders, eq(orders.userId, user.id))
+    .where(and(eq(user.role, "customer"), isNull(user.deletedAt)))
+    .groupBy(user.id)
     .orderBy(desc(user.createdAt));
 
   return (
-    <div className="flex h-screen bg-stone-50">
-      <AdminSidebar />
-      <main className="flex-1 overflow-y-auto p-6">
-        <div className="mb-6">
-          <h1 className="font-display text-2xl font-bold text-stone-900">
-            Customers
-          </h1>
-          <p className="text-stone-500 text-sm">
-            {customers.length} registered accounts
-          </p>
-        </div>
+    <div className="p-6 md:p-8 max-w-7xl">
+      <div className="mb-6">
+        <h1 className="font-display text-2xl font-bold">Customers</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          {customers.length} registered customer
+          {customers.length !== 1 ? "s" : ""}
+        </p>
+      </div>
 
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-stone-50">
+      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/40 border-b border-border">
+                {["Customer", "Email", "Phone", "Orders", "Joined"].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {customers.length === 0 ? (
                 <tr>
-                  {["Customer", "Email", "Phone", "Joined", "Role"].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left text-xs font-semibold text-stone-500 uppercase tracking-wider px-6 py-3"
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  <td
+                    colSpan={5}
+                    className="text-center py-12 text-muted-foreground text-sm"
+                  >
+                    No customers yet.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-50">
-                {customers.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-6 py-12 text-center text-stone-400"
-                    >
-                      <Users className="w-8 h-8 mx-auto mb-2 text-stone-300" />
-                      No customers yet
+              ) : (
+                customers.map((c) => (
+                  <tr
+                    key={c.id}
+                    className="hover:bg-muted/20 transition-colors"
+                  >
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-brand-green-light flex items-center justify-center text-brand-green font-bold text-sm shrink-0">
+                          {(c.name ?? c.email)[0].toUpperCase()}
+                        </div>
+                        <span className="font-medium text-xs">
+                          {c.name ?? "—"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-xs text-muted-foreground">
+                      {c.email}
+                    </td>
+                    <td className="px-5 py-3 text-xs text-muted-foreground">
+                      {c.phone ?? "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <Badge className="bg-brand-green-light text-brand-green border-0 text-xs">
+                        {c.orderCount} order{c.orderCount !== 1 ? "s" : ""}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3 text-xs text-muted-foreground">
+                      {new Date(c.createdAt).toLocaleDateString("en-NG", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </td>
                   </tr>
-                ) : (
-                  customers.map((customer) => (
-                    <tr
-                      key={customer.id}
-                      className="hover:bg-stone-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-[#0f7a3a]/10 rounded-full flex items-center justify-center shrink-0">
-                            <span className="text-[#0f7a3a] font-bold text-sm">
-                              {customer.name?.[0]?.toUpperCase() ?? "?"}
-                            </span>
-                          </div>
-                          <span className="font-medium text-stone-900 text-sm">
-                            {customer.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-stone-600">
-                        {customer.email}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-stone-600">
-                        {customer.phone ?? "—"}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-stone-500">
-                        {new Date(customer.createdAt).toLocaleDateString(
-                          "en-NG",
-                          {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          },
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full text-xs font-medium capitalize">
-                          {customer.role}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

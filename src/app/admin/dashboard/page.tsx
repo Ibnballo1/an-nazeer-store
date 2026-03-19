@@ -16,7 +16,7 @@ import {
   Clock,
   Truck,
 } from "lucide-react";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminSidebar } from "@/components/admin/sidebar";
 
 async function getDashboardStats() {
   const [totalOrders] = await db.select({ count: count() }).from(orders);

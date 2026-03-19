@@ -1,150 +1,125 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
-import { adminGetConsultations } from "@/lib/actions/consultation";
-import { Heart, Clock, CheckCircle2, MessageSquare } from "lucide-react";
+import { Metadata } from "next";
+import { getConsultations } from "@/lib/actions/consultation";
+import { StatusBadge } from "@/components/admin/status-badge";
+import { ConsultationUpdater } from "./consultation-updater";
+import { MessageSquare } from "lucide-react";
 
-const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  reviewed: "bg-blue-100 text-blue-700",
-  responded: "bg-green-100 text-green-700",
-  closed: "bg-stone-100 text-stone-600",
+export const metadata: Metadata = { title: "Consultations — Admin" };
+
+type Props = {
+  searchParams: Promise<{ page?: string; status?: string }>;
 };
 
-export default async function AdminConsultationsPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") {
-    redirect("/login?redirect=/admin/consultations");
-  }
+export default async function AdminConsultationsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const result = await getConsultations({
+    page: Number(params.page ?? 1),
+    status: params.status,
+  });
 
-  const consultations = await adminGetConsultations();
-  const pending = consultations.filter((c) => c.status === "pending").length;
+  const STATUS_TABS = ["all", "pending", "contacted", "scheduled", "completed"];
 
   return (
-    <div className="flex h-screen bg-stone-50">
-      <AdminSidebar />
-      <main className="flex-1 overflow-y-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-stone-900">
-              Health Consultations
-            </h1>
-            <p className="text-stone-500 text-sm">
-              {consultations.length} total · {pending} pending review
-            </p>
-          </div>
-          {pending > 0 && (
-            <div className="flex items-center gap-2 bg-amber-100 text-amber-800 text-sm font-semibold px-4 py-2 rounded-full">
-              <Clock className="w-4 h-4" />
-              {pending} awaiting response
-            </div>
-          )}
+    <div className="p-6 md:p-8 max-w-5xl">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="h-10 w-10 bg-brand-green-light rounded-xl flex items-center justify-center">
+          <MessageSquare className="h-5 w-5 text-brand-green" />
         </div>
+        <div>
+          <h1 className="font-display text-2xl font-bold">Consultations</h1>
+          <p className="text-muted-foreground text-sm">
+            {result.total} total requests
+          </p>
+        </div>
+      </div>
 
-        {consultations.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-stone-100 p-12 text-center">
-            <Heart className="w-10 h-10 text-stone-300 mx-auto mb-3" />
-            <p className="text-stone-500">No consultation requests yet.</p>
+      {/* Status Tabs */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6">
+        {STATUS_TABS.map((s) => {
+          const active = (params.status ?? "all") === s;
+          return (
+            <a
+              key={s}
+              href={
+                s === "all"
+                  ? "/admin/consultations"
+                  : `/admin/consultations?status=${s}`
+              }
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
+                active
+                  ? "bg-brand-green text-white"
+                  : "bg-white border border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {s}
+            </a>
+          );
+        })}
+      </div>
+
+      {/* Cards */}
+      <div className="space-y-4">
+        {result.data.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground text-sm">
+            No consultation requests found.
           </div>
         ) : (
-          <div className="space-y-4">
-            {consultations.map((c) => (
-              <div
-                key={c.id}
-                className="bg-white rounded-2xl border border-stone-100 shadow-sm p-6"
-              >
-                <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-stone-900">{c.name}</h3>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          STATUS_STYLES[c.status] ?? ""
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-stone-500">
-                      {c.email}
-                      {c.phone && ` · ${c.phone}`}
-                      {c.age && ` · Age: ${c.age}`}
-                      {c.gender && ` · ${c.gender}`}
-                    </p>
-                    <p className="text-xs text-stone-400 mt-1">
-                      {new Date(c.createdAt).toLocaleString("en-NG")}
-                    </p>
+          result.data.map((req) => (
+            <div
+              key={req.id}
+              className="bg-white rounded-2xl border border-border p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-semibold text-sm">{req.name}</p>
+                    <StatusBadge status={req.status} />
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="bg-stone-50 rounded-xl p-4">
-                    <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
-                      Health Challenge
-                    </p>
-                    <p className="text-sm text-stone-700 leading-relaxed">
-                      {c.healthChallenge}
-                    </p>
-                  </div>
-
-                  {c.currentMedications && (
-                    <div className="bg-stone-50 rounded-xl p-4">
-                      <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
-                        Current Medications
-                      </p>
-                      <p className="text-sm text-stone-700">
-                        {c.currentMedications}
-                      </p>
-                    </div>
-                  )}
-
-                  {c.allergies && (
-                    <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
-                      <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-1">
-                        ⚠ Allergies
-                      </p>
-                      <p className="text-sm text-stone-700">{c.allergies}</p>
-                    </div>
-                  )}
-
-                  {c.response && (
-                    <div className="bg-[#0f7a3a]/5 rounded-xl p-4 border border-[#0f7a3a]/15">
-                      <p className="text-xs font-semibold text-[#0f7a3a] uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Practitioner Response
-                      </p>
-                      <p className="text-sm text-stone-700 leading-relaxed">
-                        {c.response}
-                      </p>
-                    </div>
+                  <p className="text-xs text-muted-foreground">{req.email}</p>
+                  {req.phone && (
+                    <p className="text-xs text-muted-foreground">{req.phone}</p>
                   )}
                 </div>
-
-                <div className="mt-4 pt-4 border-t border-stone-100 flex gap-2 flex-wrap">
-                  <a
-                    href={`mailto:${c.email}?subject=Re: Your Herbal Consultation Request&body=Dear ${c.name},%0A%0AThank you for reaching out to An-Nazeer Holistic Home.%0A%0A`}
-                    className="inline-flex items-center gap-1.5 bg-[#0f7a3a] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#0a5c2c] transition-colors"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    Reply via Email
-                  </a>
-                  {c.phone && (
-                    <a
-                      href={`https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello ${c.name}, this is An-Nazeer Holistic Home regarding your health consultation.`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 bg-[#25D366] text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-[#22c35e] transition-colors"
-                    >
-                      WhatsApp
-                    </a>
-                  )}
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(req.createdAt).toLocaleDateString("en-NG", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
               </div>
-            ))}
-          </div>
+
+              {req.healthChallenge && (
+                <p className="text-xs font-semibold text-muted-foreground mb-1">
+                  {req.healthChallenge}
+                </p>
+              )}
+              <p className="text-sm text-foreground/80 mb-4 leading-relaxed">
+                {req.message}
+              </p>
+
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-4">
+                <span>
+                  Current medications: <strong>{req.currentMedications}</strong>
+                </span>
+                {req.allergies && (
+                  <span>
+                    Allergies: <strong>{req.allergies}</strong>
+                  </span>
+                )}
+              </div>
+
+              {/* Status Updater */}
+              <ConsultationUpdater
+                id={req.id}
+                currentStatus={req.status}
+                currentNotes={req.adminNotes}
+              />
+            </div>
+          ))
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -28,4 +28,4 @@ export const productSchema = z.object({
   metaDescription: z.string().max(500).optional(),
 });
 
-export type ProductInput = z.infer<typeof productSchema>;
+export type ProductInput = z.input<typeof productSchema>;
