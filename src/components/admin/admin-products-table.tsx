@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Pencil, Trash2, Eye, Sprout, Search } from "lucide-react";
-import { adminDeleteProduct } from "@/lib/actions/products";
+import { deleteProduct } from "@/lib/actions/products";
 import { toast } from "sonner";
 import type { Product } from "@/db/schema";
 
@@ -26,7 +26,7 @@ export function AdminProductsTable({ products }: Props) {
     setDeleting(id);
     startTransition(async () => {
       try {
-        await adminDeleteProduct(id);
+        await deleteProduct(id);
         toast.success(`"${name}" deleted.`);
       } catch {
         toast.error("Failed to delete product.");
@@ -113,7 +113,7 @@ export function AdminProductsTable({ products }: Props) {
                           <p className="font-medium text-stone-900 text-sm line-clamp-1">
                             {product.name}
                           </p>
-                          {product.isNafdacApproved && (
+                          {product.isCertified && (
                             <span className="text-[10px] text-[#0f7a3a] font-semibold">
                               NAFDAC
                             </span>
@@ -146,12 +146,12 @@ export function AdminProductsTable({ products }: Props) {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          product.isActive
+                          product.status === "active"
                             ? "bg-green-100 text-green-700"
                             : "bg-stone-100 text-stone-600"
                         }`}
                       >
-                        {product.isActive ? "Active" : "Hidden"}
+                        {product.status === "active" ? "Active" : "Hidden"}
                       </span>
                     </td>
                     <td className="px-6 py-4">

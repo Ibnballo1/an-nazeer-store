@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Search, ChevronDown } from "lucide-react";
-import { adminUpdateOrderStatus } from "@/lib/actions/orders";
+import { updateOrderStatus } from "@/lib/actions/orders";
 import { toast } from "sonner";
 import type { Order } from "@/db/schema";
 
@@ -46,7 +46,7 @@ export function AdminOrdersTable({ orders }: Props) {
   ) {
     startTransition(async () => {
       try {
-        await adminUpdateOrderStatus(orderId, newStatus);
+        await updateOrderStatus(orderId, newStatus);
         toast.success("Order status updated.");
       } catch {
         toast.error("Failed to update status.");
