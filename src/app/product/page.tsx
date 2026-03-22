@@ -13,38 +13,62 @@ import {
   Sprout,
 } from "lucide-react";
 import { getProductBySlug, getProducts } from "@/lib/actions/products";
-import { Navbar } from "@/components/layout/navbar";
+import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppButton } from "@/components/layout/whatsapp-button";
-import { ProductActions } from "@/components/shop/product-actions";
-import { ProductGallery } from "@/components/shop/product-gallery";
+import { AddToCartButton } from "@/components/store/add-to-cart-button";
 
-interface Props {
-  params: { slug: string };
-}
+type Props = {
+  params: Promise<{ slug: string }>;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await getProductBySlug(params.slug);
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
   if (!product) return { title: "Product not found" };
   return {
-    title: product.name,
-    description: product.shortDescription ?? product.description ?? undefined,
+    title: product.metaTitle ?? product.name,
+    description:
+      product.metaDescription ?? product.shortDescription ?? undefined,
   };
 }
 
 export default async function ProductPage({ params }: Props) {
-  const product = await getProductBySlug(params.slug);
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
+
   if (!product) notFound();
 
-  const related = await getProducts({
-    categoryId: product.categoryId ?? undefined,
-    limit: 4,
-  });
-  const otherProducts = related.filter((p) => p.id !== product.id).slice(0, 4);
+  // Fetch related products using categorySlug from the category relation
+  // getProducts returns PaginatedResult — access .data for the array
+  const categorySlug = product.category?.slug;
 
-  const images: string[] = (product.images as string[]) ?? [];
-  const benefits: string[] = (product.benefits as string[]) ?? [];
-  const ingredients: string[] = (product.ingredients as string[]) ?? [];
+  const relatedResult = await getProducts({
+    categorySlug,
+    pageSize: 5, // fetch 5 so we can filter out current product and still have 4
+  });
+
+  const otherProducts = relatedResult.data
+    .filter((p) => p.id !== product.id)
+    .slice(0, 4);
+
+  // Safely extract JSON fields
+  const images: string[] = Array.isArray(product.images) ? product.images : [];
+  const benefits: string[] = Array.isArray(product.benefits)
+    ? product.benefits
+    : [];
+
+  // ingredients is a plain string in the schema, not an array
+  const ingredientsText: string = product.ingredients ?? "";
+
+  // Derive rating from reviews relation
+  const reviews = product.reviews ?? [];
+  const avgRating = reviews.length
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : null;
+
+  const isOutOfStock =
+    product.trackInventory && !product.allowBackorder && product.stock === 0;
 
   const whatsappText = encodeURIComponent(
     `Hi! I'd like to order: ${product.name} (₦${Number(product.price).toLocaleString()}). Can you help me?`,
@@ -52,19 +76,30 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <>
-      <Navbar />
-      <div className="pt-16 md:pt-20 min-h-screen bg-stone-50">
+      <Header />
+      <div className="min-h-screen bg-stone-50">
         {/* Breadcrumb */}
         <div className="bg-white border-b border-stone-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <nav className="flex items-center gap-2 text-xs text-stone-500">
-              <Link href="/" className="hover:text-[#0f7a3a]">
+              <Link href="/" className="hover:text-brand-green">
                 Home
               </Link>
               <ChevronRight className="w-3 h-3" />
-              <Link href="/shop" className="hover:text-[#0f7a3a]">
+              <Link href="/shop" className="hover:text-brand-green">
                 Shop
               </Link>
+              {product.category && (
+                <>
+                  <ChevronRight className="w-3 h-3" />
+                  <Link
+                    href={`/shop?category=${product.category.slug}`}
+                    className="hover:text-brand-green"
+                  >
+                    {product.category.name}
+                  </Link>
+                </>
+              )}
               <ChevronRight className="w-3 h-3" />
               <span className="text-stone-800 font-medium line-clamp-1">
                 {product.name}
@@ -75,21 +110,57 @@ export default async function ProductPage({ params }: Props) {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid lg:grid-cols-2 gap-10 xl:gap-16">
-            {/* Gallery */}
-            <ProductGallery images={images} name={product.name} />
+            {/* Image Gallery */}
+            <div className="space-y-3">
+              <div className="relative aspect-square bg-brand-cream rounded-2xl overflow-hidden">
+                {images[0] ? (
+                  <Image
+                    src={images[0]}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sprout className="w-16 h-16 text-stone-300" />
+                  </div>
+                )}
+              </div>
 
-            {/* Info */}
+              {/* Thumbnail strip */}
+              {images.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                  {images.map((img, i) => (
+                    <div
+                      key={i}
+                      className="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 border-border"
+                    >
+                      <Image
+                        src={img}
+                        alt={`${product.name} ${i + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Product Info */}
             <div className="space-y-6">
               {/* Badges */}
               <div className="flex flex-wrap gap-2">
-                {product.isNafdacApproved && (
-                  <span className="inline-flex items-center gap-1.5 bg-[#0f7a3a]/10 text-[#0f7a3a] text-xs font-semibold px-3 py-1.5 rounded-full border border-[#0f7a3a]/20">
+                {product.isCertified && (
+                  <span className="inline-flex items-center gap-1.5 bg-brand-green/10 text-brand-green text-xs font-semibold px-3 py-1.5 rounded-full border border-brand-green/20">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     NAFDAC Approved
-                    {product.nafdacNumber && ` · ${product.nafdacNumber}`}
+                    {product.nafdacNumber ? ` · ${product.nafdacNumber}` : ""}
                   </span>
                 )}
-                {product.stock > 0 ? (
+                {!isOutOfStock ? (
                   <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-green-200">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     In Stock ({product.stock} available)
@@ -101,19 +172,19 @@ export default async function ProductPage({ params }: Props) {
                 )}
               </div>
 
-              {/* Title & rating */}
+              {/* Title & Rating */}
               <div>
                 <h1 className="font-display text-2xl md:text-3xl font-bold text-stone-900 mb-2 leading-tight">
                   {product.name}
                 </h1>
-                {Number(product.reviewCount) > 0 && (
+                {avgRating && reviews.length > 0 && (
                   <div className="flex items-center gap-2">
                     <div className="flex">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
                           className={`w-4 h-4 ${
-                            star <= Math.round(Number(product.rating))
+                            star <= Math.round(avgRating)
                               ? "fill-amber-400 text-amber-400"
                               : "text-stone-200"
                           }`}
@@ -121,7 +192,8 @@ export default async function ProductPage({ params }: Props) {
                       ))}
                     </div>
                     <span className="text-sm text-stone-500">
-                      {product.rating} ({product.reviewCount} reviews)
+                      {avgRating.toFixed(1)} ({reviews.length} review
+                      {reviews.length !== 1 ? "s" : ""})
                     </span>
                   </div>
                 )}
@@ -129,7 +201,7 @@ export default async function ProductPage({ params }: Props) {
 
               {/* Price */}
               <div className="flex items-baseline gap-3">
-                <span className="font-display text-3xl font-bold text-[#0f7a3a]">
+                <span className="font-display text-3xl font-bold text-brand-green">
                   ₦{Number(product.price).toLocaleString()}
                 </span>
                 {product.comparePrice && (
@@ -152,21 +224,18 @@ export default async function ProductPage({ params }: Props) {
 
               {/* Short description */}
               {product.shortDescription && (
-                <p className="text-stone-600 text-base leading-relaxed border-l-2 border-[#0f7a3a]/30 pl-4">
+                <p className="text-stone-600 text-base leading-relaxed border-l-2 border-brand-green/30 pl-4">
                   {product.shortDescription}
                 </p>
               )}
 
-              {/* Add to cart / buy now */}
-              <ProductActions
-                product={{
-                  id: product.id,
-                  name: product.name,
-                  price: Number(product.price),
-                  image: images[0] ?? "",
-                  stock: product.stock,
-                  slug: product.slug,
-                }}
+              {/* Add to Cart */}
+              <AddToCartButton
+                productId={product.id}
+                quantity={1}
+                size="lg"
+                fullWidth
+                disabled={isOutOfStock}
               />
 
               {/* WhatsApp order */}
@@ -191,7 +260,7 @@ export default async function ProductPage({ params }: Props) {
                     key={b.label}
                     className="flex flex-col items-center gap-1.5 bg-stone-100 rounded-xl p-3 text-center"
                   >
-                    <b.icon className="w-5 h-5 text-[#0f7a3a]" />
+                    <b.icon className="w-5 h-5 text-brand-green" />
                     <span className="text-xs font-medium text-stone-600">
                       {b.label}
                     </span>
@@ -201,52 +270,35 @@ export default async function ProductPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Tabs section */}
+          {/* Details section */}
           <div className="mt-12 bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-            <div className="border-b border-stone-100">
-              <div className="flex overflow-x-auto px-6 pt-4 gap-0">
-                {["Description", "Benefits", "Ingredients & Usage"].map(
-                  (tab, i) => (
-                    <div
-                      key={tab}
-                      className={`px-5 py-3 text-sm font-semibold whitespace-nowrap cursor-default border-b-2 ${
-                        i === 0
-                          ? "border-[#0f7a3a] text-[#0f7a3a]"
-                          : "border-transparent text-stone-500"
-                      }`}
-                    >
-                      {tab}
-                    </div>
-                  ),
-                )}
-              </div>
-            </div>
-            <div className="p-6 md:p-8">
-              <div className="prose prose-stone prose-sm max-w-none">
-                {product.description ? (
+            <div className="p-6 md:p-8 space-y-8">
+              {/* Description */}
+              {product.description && (
+                <div>
+                  <h2 className="font-display text-xl font-bold text-stone-900 mb-3">
+                    Description
+                  </h2>
                   <p className="text-stone-600 leading-relaxed">
                     {product.description}
                   </p>
-                ) : (
-                  <p className="text-stone-400 italic">
-                    No description available.
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
 
+              {/* Benefits */}
               {benefits.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
-                    <Leaf className="w-4 h-4 text-[#0f7a3a]" />
+                <div>
+                  <h2 className="font-display text-xl font-bold text-stone-900 mb-4 flex items-center gap-2">
+                    <Leaf className="w-5 h-5 text-brand-green" />
                     Key Benefits
-                  </h3>
+                  </h2>
                   <ul className="space-y-2.5">
                     {benefits.map((b, i) => (
                       <li
                         key={i}
                         className="flex items-start gap-3 text-sm text-stone-600"
                       >
-                        <CheckCircle2 className="w-4 h-4 text-[#0f7a3a] shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 text-brand-green shrink-0 mt-0.5" />
                         {b}
                       </li>
                     ))}
@@ -254,29 +306,24 @@ export default async function ProductPage({ params }: Props) {
                 </div>
               )}
 
-              {ingredients.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="font-semibold text-stone-900 mb-3">
+              {/* Ingredients */}
+              {ingredientsText && (
+                <div>
+                  <h2 className="font-display text-xl font-bold text-stone-900 mb-3">
                     Ingredients
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {ingredients.map((ing, i) => (
-                      <span
-                        key={i}
-                        className="bg-[#0f7a3a]/8 text-[#0f7a3a] text-xs font-medium px-3 py-1.5 rounded-full border border-[#0f7a3a]/15"
-                      >
-                        {ing}
-                      </span>
-                    ))}
-                  </div>
+                  </h2>
+                  <p className="text-stone-600 leading-relaxed text-sm">
+                    {ingredientsText}
+                  </p>
                 </div>
               )}
 
+              {/* How to use */}
               {product.usage && (
-                <div className="mt-8 bg-stone-50 rounded-xl p-5">
-                  <h3 className="font-semibold text-stone-900 mb-2">
+                <div className="bg-stone-50 rounded-xl p-5">
+                  <h2 className="font-semibold text-stone-900 mb-2">
                     How to Use
-                  </h3>
+                  </h2>
                   <p className="text-sm text-stone-600 leading-relaxed">
                     {product.usage}
                   </p>
@@ -284,6 +331,53 @@ export default async function ProductPage({ params }: Props) {
               )}
             </div>
           </div>
+
+          {/* Reviews */}
+          {reviews.length > 0 && (
+            <div className="mt-10">
+              <h2 className="font-display text-2xl font-bold text-stone-900 mb-6">
+                Customer Reviews ({reviews.length})
+              </h2>
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="bg-white rounded-2xl border border-stone-100 p-5"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <p className="font-semibold text-sm">
+                          {review.reviewerName ?? "Anonymous"}
+                        </p>
+                        {review.isVerifiedPurchase && (
+                          <span className="text-xs text-brand-green">
+                            ✓ Verified Purchase
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`h-3.5 w-3.5 ${
+                              s <= review.rating
+                                ? "fill-amber-400 text-amber-400"
+                                : "text-stone-200"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {review.body && (
+                      <p className="text-sm text-stone-600 leading-relaxed">
+                        {review.body}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Related products */}
           {otherProducts.length > 0 && (
@@ -295,13 +389,13 @@ export default async function ProductPage({ params }: Props) {
                 {otherProducts.map((p) => (
                   <Link
                     key={p.id}
-                    href={`/product/${p.slug}`}
-                    className="product-card bg-white rounded-2xl overflow-hidden border border-stone-100 shadow-sm group"
+                    href={`/shop/${p.slug}`}
+                    className="bg-white rounded-2xl overflow-hidden border border-stone-100 shadow-sm group hover:shadow-card transition-shadow"
                   >
                     <div className="aspect-square bg-stone-50 overflow-hidden relative">
-                      {(p.images as string[])?.[0] ? (
+                      {Array.isArray(p.images) && p.images[0] ? (
                         <Image
-                          src={(p.images as string[])[0]}
+                          src={p.images[0]}
                           alt={p.name}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -316,7 +410,7 @@ export default async function ProductPage({ params }: Props) {
                       <h3 className="font-semibold text-stone-900 text-sm line-clamp-2 mb-1">
                         {p.name}
                       </h3>
-                      <p className="text-[#0f7a3a] font-bold text-sm">
+                      <p className="text-brand-green font-bold text-sm">
                         ₦{Number(p.price).toLocaleString()}
                       </p>
                     </div>
