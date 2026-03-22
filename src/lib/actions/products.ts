@@ -2,20 +2,10 @@
 
 import { db } from "@/db";
 import { products, categories, reviews } from "@/db/schema";
-import {
-  and,
-  eq,
-  ilike,
-  desc,
-  asc,
-  sql,
-  inArray,
-  gt,
-  isNull,
-} from "drizzle-orm";
-import { productSchema, type ProductInput } from "../validations/product";
-import { requireAdmin } from "../server";
-import { slugify } from "../utils";
+import { and, eq, ilike, desc, asc, sql, isNull } from "drizzle-orm";
+import { productSchema, type ProductInput } from "@/lib/validations/product";
+import { requireAdmin } from "@/lib/server";
+import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, PaginatedResult } from "@/types";
 import type { Product } from "@/db/schema";
@@ -36,7 +26,6 @@ export async function getProducts(opts: {
   const pageSize = Math.min(48, opts.pageSize ?? 12);
   const offset = (page - 1) * pageSize;
 
-  // Build where conditions
   const conditions = [
     eq(products.status, "active"),
     isNull(products.deletedAt),
@@ -59,7 +48,6 @@ export async function getProducts(opts: {
     }
   }
 
-  // Sort order
   const orderBy = (() => {
     switch (opts.sort) {
       case "price-asc":
@@ -97,7 +85,7 @@ export async function getProducts(opts: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PUBLIC — Get a single product by slug
+// PUBLIC — Get single product by slug
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getProductBySlug(slug: string) {
@@ -125,13 +113,49 @@ export async function getProductBySlug(slug: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getFeaturedProducts(limit = 8) {
-  return db.query.products.findMany({
+  const featured = await db.query.products.findMany({
     where: and(
       eq(products.status, "active"),
       eq(products.isFeatured, true),
       isNull(products.deletedAt),
     ),
     orderBy: [desc(products.isBestSeller), desc(products.createdAt)],
+    limit,
+    with: { category: true },
+  });
+
+  if (featured.length >= limit) return featured;
+
+  // Top up with bestsellers if not enough featured products
+  const featuredIds = new Set(featured.map((p) => p.id));
+
+  const bestSellers = await db.query.products.findMany({
+    where: and(
+      eq(products.status, "active"),
+      eq(products.isBestSeller, true),
+      isNull(products.deletedAt),
+    ),
+    orderBy: [desc(products.createdAt)],
+    limit,
+    with: { category: true },
+  });
+
+  const extras = bestSellers.filter((p) => !featuredIds.has(p.id));
+  return [...featured, ...extras].slice(0, limit);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC — Get bestseller products for homepage
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getBestSellerProducts(limit = 4) {
+  return db.query.products.findMany({
+    where: and(
+      eq(products.status, "active"),
+      eq(products.isBestSeller, true),
+      isNull(products.deletedAt),
+    ),
+    orderBy: [desc(products.createdAt)],
     limit,
     with: { category: true },
   });
@@ -165,7 +189,6 @@ export async function createProduct(
   const data = parsed.data;
   const slug = slugify(data.name);
 
-  // Ensure slug is unique
   const existing = await db.query.products.findFirst({
     where: eq(products.slug, slug),
   });
@@ -185,6 +208,7 @@ export async function createProduct(
       })
       .returning();
 
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/admin/products");
 
@@ -211,7 +235,6 @@ export async function updateProduct(
       updatedAt: new Date(),
     };
 
-    // Coerce numeric fields to strings for Drizzle numeric columns
     if (input.price !== undefined) updateData.price = String(input.price);
     if (input.comparePrice !== undefined)
       updateData.comparePrice = input.comparePrice
@@ -228,6 +251,7 @@ export async function updateProduct(
       .where(eq(products.id, id))
       .returning();
 
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath(`/shop/${product.slug}`);
     revalidatePath("/admin/products");
@@ -247,11 +271,13 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
   await requireAdmin();
 
   try {
-    await db
+    const [product] = await db
       .update(products)
-      .set({ deletedAt: new Date(), status: "archived" })
-      .where(eq(products.id, id));
+      .set({ deletedAt: new Date(), status: "archived", updatedAt: new Date() })
+      .where(eq(products.id, id))
+      .returning();
 
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/admin/products");
 
@@ -268,7 +294,7 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
 
 export async function updateStock(
   id: string,
-  delta: number, // positive = add stock, negative = deduct
+  delta: number,
 ): Promise<ActionResult> {
   await requireAdmin();
 

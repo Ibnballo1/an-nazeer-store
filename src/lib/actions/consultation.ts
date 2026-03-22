@@ -4,9 +4,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { consultationRequests } from "@/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { requireAdmin } from "@/lib/server";
+import { requireAdmin } from "../server";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 
@@ -22,70 +20,53 @@ export type ConsultationStatus =
   | "cancelled";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Explicit row type — mirrors schema columns exactly so TS resolves all fields
-// ─────────────────────────────────────────────────────────────────────────────
-
-export type ConsultationRow = {
-  id: string;
-  userId: string | null;
-  name: string;
-  email: string;
-  phone: string | null;
-  // REMOVED: subject, preferredContact, preferredTime, healthConcern
-  // ADDED:
-  age: number | null;
-  gender: string | null;
-  healthChallenge: string | null;
-  currentMedications: string | null;
-  allergies: string | null;
-
-  message: string;
-  status: ConsultationStatus;
-  adminNotes: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  user: {
-    id: string;
-    name: string | null;
-    email: string;
-  } | null;
-};
-
-// ... rest of file unchanged
-// ─────────────────────────────────────────────────────────────────────────────
-// Zod schema
+// Zod schema — matches actual DB columns exactly
+// age is integer in DB so we coerce from string input
 // ─────────────────────────────────────────────────────────────────────────────
 
 const consultationSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Valid email is required"),
   phone: z.string().optional(),
-  subject: z.string().optional(),
-  message: z.string().min(10, "Please describe your concern (min 10 chars)"),
-  healthConcern: z.string().optional(),
-  preferredContact: z.enum(["email", "phone", "whatsapp"]).default("email"),
-  preferredTime: z.string().optional(),
+  age: z.coerce.number().int().positive().optional().nullable(),
+  gender: z.string().optional().nullable(),
+  message: z.string().min(10, "Please describe your concern"),
+  healthChallenge: z.string().optional().nullable(),
+  currentMedications: z.string().optional().nullable(),
+  allergies: z.string().optional().nullable(),
 });
+
+export type ConsultationInput = z.infer<typeof consultationSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC — Submit consultation request
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function submitConsultation(
-  input: z.infer<typeof consultationSchema>,
+  input: ConsultationInput,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = consultationSchema.safeParse(input);
+
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const session = await auth.api.getSession({ headers: await headers() });
-  const userId = session?.user.id ?? null;
+  const data = parsed.data;
 
   try {
     const [request] = await db
       .insert(consultationRequests)
-      .values({ ...parsed.data, userId })
+      .values({
+        name: data.name,
+        email: data.email,
+        phone: data.phone ?? null,
+        age: data.age ?? null,
+        gender: data.gender ?? null,
+        message: data.message,
+        healthChallenge: data.healthChallenge ?? null,
+        currentMedications: data.currentMedications ?? null,
+        allergies: data.allergies ?? null,
+      })
       .returning({ id: consultationRequests.id });
 
     revalidatePath("/admin/consultations");
@@ -119,7 +100,6 @@ export async function getConsultations(opts: {
     orderBy: [desc(consultationRequests.createdAt)],
     limit: pageSize,
     offset,
-    with: { user: true },
   });
 
   const [{ count }] = await db

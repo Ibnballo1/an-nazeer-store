@@ -2,10 +2,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getCategories } from "@/lib/actions/products";
-import { AdminSidebar } from "@/components/admin/sidebar";
-import { AdminProductForm } from "@/components/admin/admin-product-form";
+// import { AdminSidebar } from "@/components/admin/sidebar";
+import { ProductFilters } from "@/components/store/product-filters";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { ProductForm } from "../product-form";
 
 export default async function NewProductPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -17,7 +18,7 @@ export default async function NewProductPage() {
 
   return (
     <div className="flex h-screen bg-stone-50">
-      <AdminSidebar />
+      {/* <AdminSidebar /> */}
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mb-6">
           <Link
@@ -31,7 +32,7 @@ export default async function NewProductPage() {
             Add New Product
           </h1>
         </div>
-        <AdminProductForm categories={categories} />
+        <ProductForm categories={categories} />
       </main>
     </div>
   );

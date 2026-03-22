@@ -39,11 +39,12 @@ CREATE TABLE "consultation_requests" (
 	"name" varchar(255) NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"phone" varchar(20),
-	"subject" varchar(255),
-	"message" text NOT NULL,
-	"health_concern" text,
-	"preferred_contact" varchar(20) DEFAULT 'email' NOT NULL,
-	"preferred_time" varchar(100),
+	"age" integer,
+	"gender" varchar(50),
+	"health_challenge" text,
+	"current_medications" text,
+	"allergies" text,
+	"message" text DEFAULT '' NOT NULL,
 	"status" "consultation_status" DEFAULT 'pending' NOT NULL,
 	"admin_notes" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -212,9 +213,6 @@ CREATE INDEX "accounts_provider_idx" ON "accounts" USING btree ("provider_id","a
 CREATE UNIQUE INDEX "categories_slug_idx" ON "categories" USING btree ("slug");--> statement-breakpoint
 CREATE INDEX "categories_parent_idx" ON "categories" USING btree ("parent_id");--> statement-breakpoint
 CREATE INDEX "categories_active_idx" ON "categories" USING btree ("is_active");--> statement-breakpoint
-CREATE INDEX "consultations_user_idx" ON "consultation_requests" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "consultations_status_idx" ON "consultation_requests" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "consultations_email_idx" ON "consultation_requests" USING btree ("email");--> statement-breakpoint
 CREATE INDEX "order_items_order_idx" ON "order_items" USING btree ("order_id");--> statement-breakpoint
 CREATE INDEX "order_items_product_idx" ON "order_items" USING btree ("product_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "orders_order_number_idx" ON "orders" USING btree ("order_number");--> statement-breakpoint

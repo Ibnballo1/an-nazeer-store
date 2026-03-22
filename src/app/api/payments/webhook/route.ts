@@ -1,3 +1,4 @@
+import { rateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { db } from "@/db";
@@ -7,6 +8,11 @@ import { eq } from "drizzle-orm";
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const { success } = rateLimit(`webhook:${ip}`, 30, 60_000);
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   // ── 1. Verify webhook signature ─────────────────────────────────────────
   const rawBody = await req.text();
   const hash = crypto

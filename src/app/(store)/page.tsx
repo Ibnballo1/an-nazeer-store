@@ -1,8 +1,14 @@
+// src/app/(store)/page.tsx
+
 import { Suspense } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { getFeaturedProducts, getCategories } from "@/lib/actions/products";
+import {
+  getFeaturedProducts,
+  getCategories,
+  getBestSellerProducts,
+} from "@/lib/actions/products";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +28,14 @@ export const metadata: Metadata = {
     "NAFDAC-approved herbal products, natural remedies, beauty solutions and health consultations. Shop online and get delivered across Nigeria.",
 };
 
-// Revalidate homepage every 10 minutes
-export const revalidate = 600;
+// Revalidate homepage every 1 minutes
+export const revalidate = 60;
 
 export default async function HomePage() {
-  const [featured, categories] = await Promise.all([
+  const [featured, categories, bestSellers] = await Promise.all([
     getFeaturedProducts(8),
     getCategories(),
+    getBestSellerProducts(4),
   ]);
 
   return (
@@ -204,6 +211,40 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Bestsellers ───────────────────────────────────────────────────── */}
+      {bestSellers.length > 0 && (
+        <section className="py-12 md:py-16 bg-brand-cream">
+          <div className="container-safe">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="font-display text-2xl md:text-3xl font-semibold">
+                  Bestsellers
+                </h2>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Our most loved products
+                </p>
+              </div>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="hidden sm:flex"
+              >
+                <Link href="/shop?sort=popular">
+                  View all <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {bestSellers.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Categories Grid ───────────────────────────────────────────────── */}
       <section className="py-12 md:py-16 bg-brand-cream">
