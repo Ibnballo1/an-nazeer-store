@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       categorySlug,
       search,
       featured,
-      limit,
+      pageSize: limit,
     });
     return NextResponse.json(products);
   } catch (err) {
