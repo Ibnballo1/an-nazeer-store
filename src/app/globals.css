@@ -1,0 +1,101 @@
+/* 1. External Fonts MUST BE FIRST */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap");
+
+/* 2. Framework Imports */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* 3. Custom Variants and Themes */
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* ... rest of your theme config ... */
+  --color-brand-green: #0f7a3a;
+  --color-brand-green-dark: #0a5c2c;
+  --color-brand-black: #111111;
+  --color-brand-white: #ffffff;
+  --color-brand-cream: #f8f5f0;
+  --color-brand-green-light: #e8f5ee;
+
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+
+  --shadow-soft: 0 2px 20px rgba(15, 122, 58, 0.08);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.06);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --primary: 145 78% 27%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 145 78% 20%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 40 20% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 145 50% 93%;
+  --accent-foreground: 145 78% 20%;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+}
+
+/* 4. Base Styles & Global Defaults */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display font-semibold leading-tight;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* 5. Custom Utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .container-safe {
+    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
