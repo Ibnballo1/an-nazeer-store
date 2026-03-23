@@ -33,13 +33,42 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [featured, categories, bestSellers, testimonialsList] =
-    await Promise.all([
-      getFeaturedProducts(8),
-      getCategories(),
-      getBestSellerProducts(4),
-      getActiveTestimonials(3),
-    ]);
+  // 1. Initialize empty arrays to prevent "undefined" errors in the UI
+  let featured: any[] = [];
+  let categories: any[] = [];
+  let bestSellers: any[] = [];
+  let testimonialsList: any[] = [];
+
+  try {
+    // 2. Wrap the Promise.all in a try/catch
+    const [featuredRes, categoriesRes, bestSellersRes, testimonialsRes] =
+      await Promise.all([
+        getFeaturedProducts(8).catch((e) => {
+          console.error("Featured Error:", e);
+          return [];
+        }),
+        getCategories().catch((e) => {
+          console.error("Categories Error:", e);
+          return [];
+        }),
+        getBestSellerProducts(4).catch((e) => {
+          console.error("Bestseller Error:", e);
+          return [];
+        }),
+        getActiveTestimonials(3).catch((e) => {
+          console.error("Testimonial Error:", e);
+          return [];
+        }),
+      ]);
+
+    featured = featuredRes;
+    categories = categoriesRes;
+    bestSellers = bestSellersRes;
+    testimonialsList = testimonialsRes;
+  } catch (error) {
+    // This catches catastrophic failures (like the DB connection being entirely down)
+    console.error("Database connection failure:", error);
+  }
 
   return (
     <>
