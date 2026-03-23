@@ -71,7 +71,10 @@ export function UserMenu() {
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-52">
+      <DropdownMenuContent
+        align="end"
+        className="w-52 bg-white dark:bg-zinc-950 opacity-100 shadow-lg border border-border z-50"
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-semibold leading-none">

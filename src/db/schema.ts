@@ -560,6 +560,34 @@ export const consultationRequestsRelations = relations(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TESTIMONIALS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const testimonials = pgTable(
+  "testimonials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 100 }).notNull(),
+    city: varchar("city", { length: 100 }),
+    rating: integer("rating").notNull().default(5),
+    text: text("text").notNull(),
+    image: text("image"),
+    isActive: boolean("is_active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    activeIdx: index("testimonials_active_idx").on(t.isActive),
+    orderIdx: index("testimonials_order_idx").on(t.sortOrder),
+  }),
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EXPORTED TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -580,3 +608,5 @@ export type Review = typeof reviews.$inferSelect;
 export type NewReview = typeof reviews.$inferInsert;
 export type ConsultationRequest = typeof consultationRequests.$inferSelect;
 export type NewConsultationRequest = typeof consultationRequests.$inferInsert;
+export type Testimonial = typeof testimonials.$inferSelect;
+export type NewTestimonial = typeof testimonials.$inferInsert;

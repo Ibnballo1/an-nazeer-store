@@ -14,6 +14,7 @@ import {
   LogOut,
   ChevronRight,
   BarChart3,
+  Star,
 } from "lucide-react";
 import { signOut } from "@/lib/authClient";
 import { useRouter } from "next/navigation";
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/admin/products", icon: Package, label: "Products" },
   { href: "/admin/categories", icon: Tag, label: "Categories" },
   { href: "/admin/customers", icon: Users, label: "Customers" },
+  { href: "/admin/testimonials", icon: Star, label: "Testimonials" },
   { href: "/admin/consultations", icon: MessageSquare, label: "Consultations" },
 ];
 

@@ -107,3 +107,70 @@ export async function deleteProductImageAction(
     return { success: false, error: "Delete failed." };
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Upload a testimonial profile image to Supabase Storage
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function uploadTestimonialImageAction(
+  formData: FormData,
+): Promise<ActionResult<{ url: string; path: string }>> {
+  await requireAdmin();
+
+  const file = formData.get("file");
+
+  if (!file || !(file instanceof File)) {
+    return { success: false, error: "No file provided." };
+  }
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return {
+      success: false,
+      error: "Invalid file type. Only JPEG, PNG, and WebP are allowed.",
+    };
+  }
+
+  if (file.size > MAX_SIZE) {
+    return {
+      success: false,
+      error: "File too large. Maximum size is 5MB.",
+    };
+  }
+
+  try {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const filePath = `testimonials/${fileName}`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("product-images") // reuse the same bucket
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("[uploadTestimonialImage]", uploadError);
+      return { success: false, error: uploadError.message };
+    }
+
+    const { data: urlData } = supabaseAdmin.storage
+      .from("product-images")
+      .getPublicUrl(filePath);
+
+    return {
+      success: true,
+      data: {
+        url: urlData.publicUrl,
+        path: filePath,
+      },
+    };
+  } catch (err) {
+    console.error("[uploadTestimonialImageAction]", err);
+    return { success: false, error: "Upload failed. Please try again." };
+  }
+}

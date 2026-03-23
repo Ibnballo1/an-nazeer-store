@@ -21,6 +21,7 @@ import {
   Phone,
   MessageCircle,
 } from "lucide-react";
+import { getActiveTestimonials } from "@/lib/actions/testimonials";
 
 export const metadata: Metadata = {
   title: "An-Nazeer Holistic Home | Natural Herbal Wellness Nigeria",
@@ -32,11 +33,13 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const [featured, categories, bestSellers] = await Promise.all([
-    getFeaturedProducts(8),
-    getCategories(),
-    getBestSellerProducts(4),
-  ]);
+  const [featured, categories, bestSellers, testimonialsList] =
+    await Promise.all([
+      getFeaturedProducts(8),
+      getCategories(),
+      getBestSellerProducts(4),
+      getActiveTestimonials(3),
+    ]);
 
   return (
     <>
@@ -78,7 +81,7 @@ export default async function HomePage() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="border-white/40 text-white hover:bg-white/10 rounded-xl h-12 px-6"
+                className="border-white/40 text-white bg-brand-green hover:bg-white hover:text-brand-green rounded-xl h-12 px-6"
               >
                 <Link href="/contact#consultation">Book Consultation</Link>
               </Button>
@@ -309,7 +312,7 @@ export default async function HomePage() {
                 <Button
                   asChild
                   variant="outline"
-                  className="border-white/40 text-white hover:bg-white/10 rounded-xl"
+                  className="border-white/40 text-white bg-brand-green hover:bg-white hover:text-brand-green rounded-xl"
                 >
                   <Link href="/contact#consultation">Free Consultation</Link>
                 </Button>
@@ -320,65 +323,71 @@ export default async function HomePage() {
       </section>
 
       {/* ── Testimonials ─────────────────────────────────────────────────── */}
-      <section className="py-12 md:py-16 bg-brand-cream">
-        <div className="container-safe">
-          <h2 className="font-display text-2xl md:text-3xl font-semibold text-center mb-2">
-            What Our Customers Say
-          </h2>
-          <p className="text-muted-foreground text-center mb-10 text-sm">
-            Thousands of Nigerians trust An-Nazeer for their wellness
-          </p>
+      {testimonialsList.length > 0 && (
+        <section className="py-12 md:py-16 bg-brand-cream">
+          <div className="container-safe">
+            <h2 className="font-display text-2xl md:text-3xl font-semibold text-center mb-2">
+              What Our Customers Say
+            </h2>
+            <p className="text-muted-foreground text-center mb-10 text-sm">
+              Thousands of Nigerians trust An-Nazeer for their wellness
+            </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              {
-                name: "Fatimah A.",
-                city: "Lagos",
-                rating: 5,
-                text: "The Gorontula syrup has been a game changer for my energy levels. I feel so much better after just two weeks!",
-              },
-              {
-                name: "Chukwuemeka O.",
-                city: "Abuja",
-                rating: 5,
-                text: "I ordered the immune boost blend and my family has not fallen sick since. Fast delivery too — got it in two days!",
-              },
-              {
-                name: "Amina M.",
-                city: "Kano",
-                rating: 5,
-                text: "The herbal consultation was incredibly helpful. They truly understand wellness holistically. I recommend to everyone.",
-              },
-            ].map((t) => (
-              <div
-                key={t.name}
-                className="bg-white rounded-2xl p-6 border border-border shadow-soft"
-              >
-                <div className="flex gap-0.5 mb-3">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-4 w-4 fill-amber-400 text-amber-400"
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-foreground/80 leading-relaxed mb-4">
-                  &ldquo;{t.text}&rdquo;
-                </p>
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-brand-green-light flex items-center justify-center text-brand-green font-bold text-sm">
-                    {t.name[0]}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {testimonialsList.map((t) => (
+                <div
+                  key={t.id}
+                  className="bg-white rounded-2xl p-6 border border-border shadow-soft"
+                >
+                  {/* Stars */}
+                  <div className="flex gap-0.5 mb-3">
+                    {Array.from({ length: t.rating }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className="h-4 w-4 fill-amber-400 text-amber-400"
+                      />
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.city}</p>
+
+                  {/* Text */}
+                  <p className="text-sm text-foreground/80 leading-relaxed mb-4">
+                    &ldquo;{t.text}&rdquo;
+                  </p>
+
+                  {/* Author */}
+                  <div className="flex items-center gap-3">
+                    {/* Profile image or initial avatar */}
+                    <div className="relative h-10 w-10 rounded-full overflow-hidden bg-brand-green-light shrink-0 flex items-center justify-center border border-border">
+                      {t.image ? (
+                        <Image
+                          src={t.image}
+                          alt={t.name}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                        />
+                      ) : (
+                        <span className="text-brand-green font-bold text-sm">
+                          {t.name[0].toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-semibold">{t.name}</p>
+                      {t.city && (
+                        <p className="text-xs text-muted-foreground">
+                          {t.city}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── WhatsApp CTA ──────────────────────────────────────────────────── */}
       <section className="py-10 border-t border-border">

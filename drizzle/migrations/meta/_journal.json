@@ -8,6 +8,20 @@
       "when": 1773958046150,
       "tag": "0000_sudden_marvex",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774267246096,
+      "tag": "0001_loose_shiva",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774296323039,
+      "tag": "0002_special_typhoid_mary",
+      "breakpoints": true
     }
   ]
 }
