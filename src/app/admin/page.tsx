@@ -15,10 +15,36 @@ import {
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
-  const [stats, recentOrders] = await Promise.all([
-    getDashboardStats(),
-    getRecentOrders(8),
-  ]);
+  // Initialize with safe defaults so the UI doesn't crash
+  let stats = {
+    totalRevenue: 0,
+    recentRevenue: 0,
+    totalOrders: 0,
+    pendingOrders: 0,
+    totalProducts: 0,
+    lowStockProducts: 0,
+    totalCustomers: 0,
+    pendingConsultations: 0,
+  };
+  let recentOrders: any[] = [];
+
+  try {
+    const [statsRes, ordersRes] = await Promise.all([
+      getDashboardStats().catch((e) => {
+        console.error("Stats Fetch Error:", e);
+        return stats; // return default object
+      }),
+      getRecentOrders(8).catch((e) => {
+        console.error("Orders Fetch Error:", e);
+        return [];
+      }),
+    ]);
+
+    stats = statsRes;
+    recentOrders = ordersRes;
+  } catch (err) {
+    console.error("Critical Dashboard Failure:", err);
+  }
 
   return (
     <div className="p-6 md:p-8 max-w-7xl">

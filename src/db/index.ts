@@ -15,10 +15,9 @@ const client =
   globalForDb.conn ??
   postgres(connectionString, {
     prepare: false,
-    max: process.env.NODE_ENV === "production" ? 1 : 10,
-    // Increase these to give the pooler more breathing room
-    connect_timeout: 30, // 30 seconds instead of 10
-    idle_timeout: 20,
+    max: 10, // Limit the pool size to keep connections low
+    idle_timeout: 30000, // Close idle connections after 30 seconds
+    connect_timeout: 10000, // 10 second connection timeout
   });
 
 if (process.env.NODE_ENV !== "production") globalForDb.conn = client;
