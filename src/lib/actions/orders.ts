@@ -233,24 +233,40 @@ export async function getAllOrders(opts: {
   const pageSize = 20;
   const offset = (page - 1) * pageSize;
 
-  const conditions: ReturnType<typeof eq>[] = [];
-
-  if (opts.status) {
-    conditions.push(eq(orders.status, opts.status as Order["status"]));
-  }
-
-  const rows = await db.query.orders.findMany({
-    where: conditions.length ? and(...conditions) : undefined,
-    orderBy: [desc(orders.createdAt)],
-    limit: pageSize,
-    offset,
-    with: { items: true, payments: true },
-  });
-
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(orders)
-    .where(conditions.length ? and(...conditions) : undefined);
+  const [rows, [{ count }]] = await Promise.all([
+    db.query.orders.findMany({
+      where: opts.status
+        ? eq(orders.status, opts.status as Order["status"])
+        : undefined,
+      orderBy: [desc(orders.createdAt)],
+      limit: pageSize,
+      offset,
+      // Only columns needed for the orders table
+      columns: {
+        id: true,
+        orderNumber: true,
+        shippingName: true,
+        shippingEmail: true,
+        total: true,
+        status: true,
+        paymentStatus: true,
+        createdAt: true,
+      },
+      with: {
+        items: {
+          columns: { id: true }, // count only
+        },
+      },
+    }),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(orders)
+      .where(
+        opts.status
+          ? eq(orders.status, opts.status as Order["status"])
+          : undefined,
+      ),
+  ]);
 
   return {
     data: rows,

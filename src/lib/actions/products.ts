@@ -61,13 +61,19 @@ export async function getProducts(opts: {
     }
   })();
 
+  // No `columns` restriction here — keeps return type as full Product
+  // which satisfies PaginatedResult<Product>
   const [rows, [{ count }]] = await Promise.all([
     db.query.products.findMany({
       where: and(...conditions),
       orderBy: [orderBy],
       limit: pageSize,
       offset,
-      with: { category: true },
+      with: {
+        category: {
+          columns: { id: true, name: true, slug: true },
+        },
+      },
     }),
     db
       .select({ count: sql<number>`count(*)::int` })
@@ -126,7 +132,6 @@ export async function getFeaturedProducts(limit = 8) {
 
   if (featured.length >= limit) return featured;
 
-  // Top up with bestsellers if not enough featured products
   const featuredIds = new Set(featured.map((p) => p.id));
 
   const bestSellers = await db.query.products.findMany({
