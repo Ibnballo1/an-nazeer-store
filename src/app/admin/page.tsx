@@ -14,9 +14,36 @@ import {
   MessageSquare,
 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
+// 1. Define the Stats interface
+interface DashboardStats {
+  totalRevenue: number;
+  recentRevenue: number;
+  totalOrders: number;
+  pendingOrders: number;
+  totalProducts: number;
+  lowStockProducts: number;
+  totalCustomers: number;
+  pendingConsultations: number;
+}
+
+// 2. Define the Order type (or import it from your schema)
+// If you're using Drizzle, you can also use: type Order = InferSelectModel<typeof orders>;
+interface RecentOrder {
+  id: string;
+  orderNumber: string;
+  shippingName: string;
+  shippingEmail: string;
+  createdAt: Date | string;
+  total: number;
+  status: string;
+  paymentStatus: string;
+}
+
 export default async function AdminDashboardPage() {
   // Initialize with safe defaults so the UI doesn't crash
-  let stats = {
+  let stats: DashboardStats = {
     totalRevenue: 0,
     recentRevenue: 0,
     totalOrders: 0,
@@ -26,7 +53,7 @@ export default async function AdminDashboardPage() {
     totalCustomers: 0,
     pendingConsultations: 0,
   };
-  let recentOrders: any[] = [];
+  let recentOrders: RecentOrder[] = [];
 
   try {
     const [statsRes, ordersRes] = await Promise.all([
@@ -41,7 +68,7 @@ export default async function AdminDashboardPage() {
     ]);
 
     stats = statsRes;
-    recentOrders = ordersRes;
+    recentOrders = ordersRes as RecentOrder[];
   } catch (err) {
     console.error("Critical Dashboard Failure:", err);
   }
