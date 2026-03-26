@@ -36,20 +36,22 @@ export default function ContactPage() {
                 {
                   icon: Phone,
                   label: "Phone / WhatsApp",
-                  value: "+234 801 234 5678",
-                  href: `tel:+2348012345678`,
+                  value: "+234 816 455 0066",
+                  href: `tel:+2348164550066`,
                 },
                 {
                   icon: Mail,
                   label: "Email",
-                  value: "hello@an-nazeer.com",
-                  href: "mailto:hello@an-nazeer.com",
+                  value: "oriyomianaseer@gmail.com",
+                  href: "mailto:oriyomianaseer@gmail.com",
                 },
                 {
                   icon: MapPin,
                   label: "Location",
-                  value: "Lagos, Nigeria",
-                  href: undefined,
+                  value:
+                    "Shop 664, Adura Bustop, Abeokuta Express Way, Beside Heyden Filling Station, Lagos",
+                  // Adding a Google Maps search link makes it more functional
+                  href: "https://www.google.com/maps/search/?api=1&query=Shop+664+Adura+bustop+abeokuta+express+way+beside+heyden+filling+station+lagos",
                 },
               ].map(({ icon: Icon, label, value, href }) => (
                 <div key={label} className="flex items-start gap-3">
@@ -61,12 +63,20 @@ export default function ContactPage() {
                     {href ? (
                       <a
                         href={href}
-                        className="text-sm font-medium hover:text-brand-green transition-colors"
+                        target={label === "Location" ? "_blank" : undefined}
+                        rel={
+                          label === "Location"
+                            ? "noopener noreferrer"
+                            : undefined
+                        }
+                        className="text-sm font-medium hover:text-brand-green transition-colors leading-relaxed block max-w-[280px]"
                       >
                         {value}
                       </a>
                     ) : (
-                      <p className="text-sm font-medium">{value}</p>
+                      <p className="text-sm font-medium leading-relaxed">
+                        {value}
+                      </p>
                     )}
                   </div>
                 </div>

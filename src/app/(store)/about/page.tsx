@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Leaf, Users, Heart } from "lucide-react";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "About Us",
@@ -93,58 +94,92 @@ export default function AboutPage() {
           <p className="text-muted-foreground text-center mb-10">
             Comprehensive wellness solutions for every need
           </p>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               {
-                emoji: "🌿",
                 title: "Natural Remedies",
                 desc: "Certified herbal remedies for common ailments and chronic conditions.",
+                image:
+                  "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=600&q=80",
+                alt: "Glass bottles with herbal tinctures and dried herbs",
               },
               {
-                emoji: "🌶",
                 title: "Food Spices",
                 desc: "NAFDAC-approved pure natural spices that enhance flavour and health.",
+                image:
+                  "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80",
+                alt: "Colourful natural spices in wooden bowls",
               },
               {
-                emoji: "✨",
                 title: "Beauty Products",
                 desc: "Chemical-free skincare and beauty products formulated from herbs.",
+                image:
+                  "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=600&q=80",
+                alt: "Natural beauty skincare products with botanicals",
               },
               {
-                emoji: "💚",
                 title: "Wellness Solutions",
                 desc: "Holistic products for energy, immunity, and overall wellbeing.",
+                image:
+                  "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&q=80",
+                alt: "Wellness and holistic health products",
               },
               {
-                emoji: "🌰",
                 title: "Gorontula Products",
                 desc: "Premium Gorontula seed and syrup for vitality and health.",
+                image:
+                  "https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=600&q=80",
+                alt: "Natural seeds and herbal syrup bottles",
               },
               {
-                emoji: "📚",
                 title: "Herbal Business Training",
                 desc: "Learn how to start and grow your own herbal wellness business.",
+                image:
+                  "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80",
+                alt: "Professional training and business workshop",
               },
               {
-                emoji: "🏥",
                 title: "Health Consultations",
                 desc: "One-on-one personalised consultations with our herbal wellness experts.",
+                image:
+                  "https://images.unsplash.com/photo-1666214280557-f1b5022eb634?w=600&q=80",
+                alt: "Professional health consultation session",
               },
               {
-                emoji: "🔬",
                 title: "Natural Aphrodisiacs",
                 desc: "Safe, natural products to support vitality and reproductive health.",
+                image:
+                  "https://images.unsplash.com/photo-1515023115689-589c33041d3c?w=600&q=80",
+                alt: "Natural herbs and botanical wellness products",
               },
             ].map((s) => (
               <div
                 key={s.title}
-                className="bg-white rounded-2xl p-6 border border-border"
+                className="group bg-white rounded-2xl border border-border overflow-hidden hover:shadow-card transition-all duration-300"
               >
-                <div className="text-3xl mb-3">{s.emoji}</div>
-                <h3 className="font-semibold mb-2">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {s.desc}
-                </p>
+                {/* Image */}
+                <div className="relative h-44 overflow-hidden">
+                  <Image
+                    src={s.image}
+                    alt={s.alt}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {/* Green overlay on hover */}
+                  <div className="absolute inset-0 bg-brand-green/0 group-hover:bg-brand-green/10 transition-colors duration-300" />
+                </div>
+
+                {/* Content */}
+                <div className="p-5">
+                  <h3 className="font-semibold text-foreground mb-1.5 group-hover:text-brand-green transition-colors">
+                    {s.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {s.desc}
+                  </p>
+                </div>
               </div>
             ))}
           </div>

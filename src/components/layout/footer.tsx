@@ -121,21 +121,24 @@ export function Footer() {
                   href={`tel:+${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}`}
                   className="text-sm text-white/60 hover:text-white transition-colors"
                 >
-                  +234 801 234 5678
+                  +234 816 455 0066
                 </a>
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="h-4 w-4 text-brand-green mt-0.5 shrink-0" />
                 <a
-                  href="mailto:hello@an-nazeer.com"
+                  href="mailto:oriyomianaseer@gmail.com"
                   className="text-sm text-white/60 hover:text-white transition-colors"
                 >
-                  hello@an-nazeer.com
+                  oriyomianaseer@gmail.com
                 </a>
               </li>
               <li className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-brand-green mt-0.5 shrink-0" />
-                <span className="text-sm text-white/60">Lagos, Nigeria</span>
+                <MapPin className="h-4 w-4 text-brand-green mt-1 shrink-0" />
+                <span className="text-sm text-white/60 leading-relaxed max-w-[250px]">
+                  Shop 664, Adura Bustop, Abeokuta Express Way, Beside Heyden
+                  Filling Station, Lagos.
+                </span>
               </li>
             </ul>
           </div>

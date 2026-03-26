@@ -33,12 +33,18 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function HomePage() {
-  // 1. Initialize empty arrays to prevent "undefined" errors in the UI
-  let featured: any[] = [];
-  let categories: any[] = [];
-  let bestSellers: any[] = [];
-  let testimonialsList: any[] = [];
+  // Extract types from the functions themselves
+  type ProductType = Awaited<ReturnType<typeof getFeaturedProducts>>[number];
+  type CategoryType = Awaited<ReturnType<typeof getCategories>>[number];
+  type TestimonialType = Awaited<
+    ReturnType<typeof getActiveTestimonials>
+  >[number];
 
+  // Initialize with specific types instead of 'any'
+  let featured: ProductType[] = [];
+  let categories: CategoryType[] = [];
+  let bestSellers: ProductType[] = [];
+  let testimonialsList: TestimonialType[] = [];
   try {
     // 2. Wrap the Promise.all in a try/catch
     const [featuredRes, categoriesRes, bestSellersRes, testimonialsRes] =
@@ -133,6 +139,15 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
+        </div>
+        <div className="absolute right-0 bottom-0 w-[400px] md:w-[600px] opacity-90">
+          <Image
+            src="/spice-hero.png"
+            alt="Spice Mix"
+            width={600}
+            height={600}
+            className="object-contain"
+          />
         </div>
       </section>
 
@@ -289,24 +304,86 @@ export default async function HomePage() {
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {categories.slice(0, 6).map((cat, i) => {
-              const EMOJIS = ["🌿", "🌶", "✨", "💚", "🌰", "🏥"];
+            {categories.slice(0, 6).map((cat) => {
+              // Map category slug to a specific curated image
+              // Falls back to a general herbal image for any unknown category
+              const CATEGORY_IMAGES: Record<
+                string,
+                { image: string; alt: string }
+              > = {
+                "natural-remedies": {
+                  image:
+                    "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=600&q=80",
+                  alt: "Herbal tincture bottles with dried herbs",
+                },
+                "food-spices": {
+                  image:
+                    "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80",
+                  alt: "Colourful natural food spices",
+                },
+                "beauty-skincare": {
+                  image:
+                    "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=600&q=80",
+                  alt: "Natural beauty and skincare products",
+                },
+                "wellness-solutions": {
+                  image:
+                    "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&q=80",
+                  alt: "Holistic wellness products",
+                },
+                "natural-aphrodisiacs": {
+                  image:
+                    "https://images.unsplash.com/photo-1515023115689-589c33041d3c?w=600&q=80",
+                  alt: "Natural herbal aphrodisiac products",
+                },
+                gorontula: {
+                  image:
+                    "https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=600&q=80",
+                  alt: "Gorontula seeds and herbal syrup",
+                },
+              };
+
+              const media = CATEGORY_IMAGES[cat.slug] ?? {
+                image:
+                  "https://images.unsplash.com/photo-1498579809087-ef1e558fd1da?w=600&q=80",
+                alt: "Natural herbal wellness products",
+              };
+
               return (
                 <Link
                   key={cat.id}
                   href={`/shop?category=${cat.slug}`}
-                  className="group relative bg-white rounded-2xl p-6 border border-border hover:border-brand-green hover:shadow-soft transition-all duration-200"
+                  className="group relative bg-white rounded-2xl border border-border overflow-hidden hover:border-brand-green hover:shadow-card transition-all duration-300"
                 >
-                  <div className="text-3xl mb-3">{EMOJIS[i] ?? "🌿"}</div>
-                  <h3 className="font-semibold text-foreground group-hover:text-brand-green transition-colors">
-                    {cat.name}
-                  </h3>
-                  {cat.description && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                      {cat.description}
-                    </p>
-                  )}
-                  <ArrowRight className="h-4 w-4 text-brand-green absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {/* Image */}
+                  <div className="relative h-36 sm:h-44 overflow-hidden">
+                    <Image
+                      src={media.image}
+                      alt={media.alt}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    {/* Dark gradient overlay for text legibility */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+                    {/* Category name overlaid on image */}
+                    <div className="absolute bottom-0 inset-x-0 p-3">
+                      <h3 className="font-semibold text-white text-sm leading-tight">
+                        {cat.name}
+                      </h3>
+                      {cat.description && (
+                        <p className="text-white/70 text-xs mt-0.5 line-clamp-1">
+                          {cat.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Arrow icon — appears on hover */}
+                    <div className="absolute top-3 right-3 h-7 w-7 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:bg-brand-green">
+                      <ArrowRight className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  </div>
                 </Link>
               );
             })}
