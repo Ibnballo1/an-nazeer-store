@@ -20,6 +20,10 @@ export const auth = betterAuth({
   // ── App URL ───────────────────────────────────────────────────────────────
   baseURL: process.env.BETTER_AUTH_URL!,
   secret: process.env.BETTER_AUTH_SECRET!,
+  trustedOrigins: [
+    "https://annazeerholistichomeltd.com",
+    "https://www.annazeerholistichomeltd.com",
+  ],
 
   // ── Email & Password ──────────────────────────────────────────────────────
   emailAndPassword: {
