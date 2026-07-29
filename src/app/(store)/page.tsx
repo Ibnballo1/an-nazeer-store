@@ -140,7 +140,7 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-        <div className="absolute right-0 bottom-0 w-[400px] md:w-[600px] opacity-90">
+        <div className="absolute hidden md:block right-0 bottom-0 w-[400px] md:w-[600px] opacity-90">
           <Image
             src="/spice-hero.png"
             alt="Spice Mix"
