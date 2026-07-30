@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { initializePayment, verifyPayment } from "@/lib/paystack";
-import { generatePaystackRef, toKobo } from "@/lib/utils";
+import { formatNaira, generatePaystackRef, toKobo } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 
@@ -190,6 +190,79 @@ export async function verifyOrderPayment(
       success: false,
       error:
         err instanceof Error ? err.message : "Payment verification failed.",
+    };
+  }
+}
+
+// Add MessageSquare to your lucide-react imports if needed, but for server actions we just return strings/data
+
+export type WhatsAppCheckoutResult = {
+  whatsAppUrl: string;
+};
+
+export async function initWhatsAppCheckout(
+  orderId: string,
+): Promise<ActionResult<WhatsAppCheckoutResult>> {
+  try {
+    // Fetch order with items
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId),
+      with: {
+        items: {
+          with: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return { success: false, error: "Order not found." };
+    }
+
+    const rawPhone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2348000000000";
+    // Format phone to clean international format (remove +, leading zeros if needed)
+    const phone = rawPhone.replace(/\D/g, "");
+
+    // Build itemized breakdown for WhatsApp
+    const itemSummary = order.items
+      .map(
+        (item) =>
+          `• ${item.quantity}x ${item.product?.name ?? "Unknown product"} (${formatNaira(Number(item.unitPrice))})`,
+      )
+      .join("\n");
+
+    const message = `Hello! 👋 I would like to place an order:
+
+*Order ID:* #${order.orderNumber}
+*Customer:* ${order.shippingName}
+*Phone:* ${order.shippingPhone}
+*Delivery Address:* ${order.shippingAddress}, ${order.shippingCity}, ${order.shippingState}
+
+*Order Items:*
+${itemSummary}
+
+*Subtotal:* ${formatNaira(Number(order.subtotal))}
+*Shipping:* ${formatNaira(Number(order.shippingFee))}
+*Total Amount:* ${formatNaira(Number(order.total))}
+${order.customerNote ? `\n*Note:* ${order.customerNote}` : ""}
+
+Please confirm my order and let me know how to pay.`;
+
+    const whatsAppUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+    return {
+      success: true,
+      data: { whatsAppUrl },
+    };
+  } catch (err) {
+    console.error("[initWhatsAppCheckout]", err);
+    return {
+      success: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to initialize WhatsApp checkout.",
     };
   }
 }

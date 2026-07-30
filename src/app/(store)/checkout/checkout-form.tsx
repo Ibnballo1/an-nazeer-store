@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createOrder } from "@/lib/actions/orders";
-import { initOrderPayment } from "@/lib/actions/payments";
+import { initOrderPayment, initWhatsAppCheckout } from "@/lib/actions/payments";
 import { shippingSchema, type ShippingInput } from "@/lib/validations/checkout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatNaira, calculateShippingFee } from "@/lib/utils";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck, MessageCircle } from "lucide-react";
 import type { Cart } from "@/types";
+
+// Check if WhatsApp mode is enabled (defaulting to 'whatsapp' or 'paystack')
+const CHECKOUT_MODE = process.env.NEXT_PUBLIC_CHECKOUT_MODE || "whatsapp";
 
 const NIGERIAN_STATES = [
   "Abia",
@@ -97,7 +100,21 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
         return;
       }
 
-      // 2. Initialize payment
+      // 2. Handle WhatsApp Checkout Flow
+      if (CHECKOUT_MODE === "whatsapp") {
+        const waResult = await initWhatsAppCheckout(orderResult.data.orderId);
+
+        if (!waResult.success) {
+          toast.error("Failed to generate WhatsApp order details 🌿");
+          return;
+        }
+
+        // Redirect directly to WhatsApp chat
+        window.location.href = waResult.data.whatsAppUrl;
+        return;
+      }
+
+      // 3. Initialize payment
       const payResult = await initOrderPayment(orderResult.data.orderId);
 
       if (!payResult.success) {
@@ -105,7 +122,7 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
         return;
       }
 
-      // 3. Redirect to Paystack
+      // 4. Redirect to Paystack
       window.location.href = payResult.data.authorizationUrl;
     } finally {
       setLoading(false);
@@ -282,12 +299,21 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
               type="submit"
               disabled={loading}
               size="lg"
-              className="w-full mt-6 bg-brand-green hover:bg-brand-green-dark text-white rounded-xl h-12"
+              className={`w-full mt-6 text-white rounded-xl h-12 ${
+                CHECKOUT_MODE === "whatsapp"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-brand-green hover:bg-brand-green-dark"
+              }`}
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing…
+                </>
+              ) : CHECKOUT_MODE === "whatsapp" ? (
+                <>
+                  <MessageCircle className="mr-2 h-5 w-5" />
+                  Complete Order on WhatsApp
                 </>
               ) : (
                 <>
@@ -298,8 +324,9 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground mt-3">
-              🔒 Secured by Paystack. You will be redirected to complete
-              payment.
+              {CHECKOUT_MODE === "whatsapp"
+                ? "💬 You will be redirected to WhatsApp to confirm your order and make payment."
+                : "🔒 Secured by Paystack. You will be redirected to complete payment."}
             </p>
           </div>
         </div>
