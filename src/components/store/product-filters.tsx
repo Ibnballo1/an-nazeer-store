@@ -67,10 +67,10 @@ export function ProductFilters({ categories }: Props) {
         <SelectTrigger className="w-full sm:w-44 rounded-xl">
           <SelectValue placeholder="Category" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="_all">All Categories</SelectItem>
+        <SelectContent className="bg-brand-cream">
+          <SelectItem value="_all" className="bg-white cursor-pointer">All Categories</SelectItem>
           {categories.map((cat) => (
-            <SelectItem key={cat.id} value={cat.slug}>
+            <SelectItem key={cat.id} value={cat.slug} className="bg-white cursor-pointer">
               {cat.name}
             </SelectItem>
           ))}
@@ -85,11 +85,11 @@ export function ProductFilters({ categories }: Props) {
         <SelectTrigger className="w-full sm:w-40 rounded-xl">
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="newest">Newest</SelectItem>
-          <SelectItem value="popular">Most Popular</SelectItem>
-          <SelectItem value="price-asc">Price: Low to High</SelectItem>
-          <SelectItem value="price-desc">Price: High to Low</SelectItem>
+        <SelectContent className="bg-brand-cream">
+          <SelectItem value="newest" className="bg-brand-white">Newest</SelectItem>
+          <SelectItem value="popular" className="bg-brand-white">Most Popular</SelectItem>
+          <SelectItem value="price-asc" className="bg-brand-white">Price: Low to High</SelectItem>
+          <SelectItem value="price-desc" className="bg-brand-white">Price: High to Low</SelectItem>
         </SelectContent>
       </Select>
 

@@ -8,8 +8,10 @@ import {
   getFeaturedProducts,
   getCategories,
   getBestSellerProducts,
+  getProducts,
 } from "@/lib/actions/products";
 import { ProductCard } from "@/components/store/product-card";
+import { SponsoredProductsCarousel } from "@/components/store/sponsored-products-carousel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,6 +24,8 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { getActiveTestimonials } from "@/lib/actions/testimonials";
+import { HeroCarousel } from "@/components/store/hero-carousel";
+import { HorizontalScrollCarousel } from "@/components/store/horizontal-scroll-carousel";
 
 export const metadata: Metadata = {
   title: "An-Nazeer Holistic Home | Natural Herbal Wellness Nigeria",
@@ -31,6 +35,34 @@ export const metadata: Metadata = {
 
 // Revalidate homepage every 1 minutes
 export const revalidate = 60;
+
+const sponsoredProducts = [
+  {
+    id: 1,
+    img: "/fibroid.jpeg",
+    slug: "shop/fibroid-treatment",
+  },
+  {
+    id: 2,
+    img: "/prostate.jpeg",
+    slug: "shop/postrate-treatment",
+  },
+  {
+    id: 3,
+    img: "/hepatitis.jpeg",
+    slug: "shop/hepatitis-package",
+  },
+  {
+    id: 4,
+    img: "/ovarian.jpeg",
+    slug: "shop/ovarian-cyst-package",
+  },
+  {
+    id: 5,
+    img: "/totalrelief.jpeg",
+    slug: "shop/total-relief-formula",
+  },
+];
 
 export default async function HomePage() {
   // Extract types from the functions themselves
@@ -44,6 +76,7 @@ export default async function HomePage() {
   let featured: ProductType[] = [];
   let categories: CategoryType[] = [];
   let bestSellers: ProductType[] = [];
+  let categoryProducts: Record<string, ProductType[]> = {};
   let testimonialsList: TestimonialType[] = [];
   try {
     // 2. Wrap the Promise.all in a try/catch
@@ -51,19 +84,19 @@ export default async function HomePage() {
       await Promise.all([
         getFeaturedProducts(8).catch((e) => {
           console.error("Featured Error:", e);
-          return [];
+          return [] as ProductType[];
         }),
         getCategories().catch((e) => {
           console.error("Categories Error:", e);
-          return [];
+          return [] as CategoryType[];
         }),
         getBestSellerProducts(4).catch((e) => {
           console.error("Bestseller Error:", e);
-          return [];
+          return [] as ProductType[];
         }),
         getActiveTestimonials(3).catch((e) => {
           console.error("Testimonial Error:", e);
-          return [];
+          return [] as TestimonialType[];
         }),
       ]);
 
@@ -71,6 +104,27 @@ export default async function HomePage() {
     categories = categoriesRes;
     bestSellers = bestSellersRes;
     testimonialsList = testimonialsRes;
+    // Fetch up to 4 products for the first few categories to show previews
+    try {
+        const catsToPreview = categories;
+      const productsByCategory = await Promise.all(
+        catsToPreview.map((c) =>
+          getProducts({ categorySlug: c.slug, pageSize: 4 })
+            .then((r) => r.data as ProductType[])
+            .catch((e) => {
+              console.error(`Category products error (${c.slug}):`, e);
+              return [] as ProductType[];
+            }),
+        ),
+      );
+
+      categoryProducts = catsToPreview.reduce((acc, c, i) => {
+        acc[c.slug] = productsByCategory[i] ?? [];
+        return acc;
+      }, {} as Record<string, ProductType[]>);
+    } catch (err) {
+      console.error("Failed to fetch category preview products:", err);
+    }
   } catch (error) {
     // This catches catastrophic failures (like the DB connection being entirely down)
     console.error("Database connection failure:", error);
@@ -79,7 +133,7 @@ export default async function HomePage() {
   return (
     <>
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <section className="relative bg-gradient-to-br from-brand-green via-brand-green to-brand-green-dark overflow-hidden">
+      <section className="relative bg-linear-to-br from-brand-green via-brand-green to-brand-green-dark overflow-hidden">
         {/* Decorative circles */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4" />
@@ -140,14 +194,15 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-        <div className="absolute hidden md:block right-0 bottom-0 w-[400px] md:w-[600px] opacity-90">
-          <Image
-            src="/spice-hero.png"
+        <div className="absolute hidden md:block right-0 bottom-0 w-100 md:w-150 opacity-90">
+          {/* <Image
+            src="/seeds-hero.jpeg"
             alt="Spice Mix"
             width={600}
             height={600}
             className="object-contain"
-          />
+          /> */}
+          <HeroCarousel />
         </div>
       </section>
 
@@ -211,6 +266,38 @@ export default async function HomePage() {
                 <p className="text-xs text-muted-foreground">{desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Sponsored Products ─────────────────────────────────────────────── */}
+      <section
+        className="relative py-12 md:py-16 bg-cover bg-center bg-no-repeat overflow-hidden"
+        style={{ backgroundImage: "url('/naturebg.jpeg')" }}
+      >
+        {/* <div className="absolute inset-0 bg-[#f7f3ec]/55" /> */}
+        <div className="container-safe relative z-10">
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_1.95fr]">
+            <div className="hidden lg:flex flex-col justify-between rounded-2xl bg-linear-to-br from-brand-green to-brand-green-dark p-8 text-white shadow-soft ring-8 ring-brand-cream overflow-hidden">
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-white/90">
+                  Sponsored Wellness
+                </div>
+                <div className="space-y-4">
+                  <h2 className="font-display text-3xl md:text-4xl font-bold leading-tight">
+                    Curated herbal solutions for every need
+                  </h2>
+                  <p className="text-sm md:text-base text-white/85 leading-relaxed">
+                    Our sponsored products are handpicked to support natural
+                    healing, trusted quality, and premium herbal wellness.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <SponsoredProductsCarousel products={sponsoredProducts} />
+            </div>
           </div>
         </div>
       </section>
@@ -294,7 +381,11 @@ export default async function HomePage() {
       )}
 
       {/* ── Categories Grid ───────────────────────────────────────────────── */}
-      <section className="py-12 md:py-16 bg-brand-cream">
+      {/* <section className="py-12 md:py-16 bg-brand-cream"> */}
+      <section
+        className="py-12 md:py-16 bg-cover bg-center bg-no-repeat overflow-hidden"
+        style={{ backgroundImage: "url('/naturebg.jpeg')" }}
+      >
         <div className="container-safe">
           <h2 className="font-display text-2xl md:text-3xl font-semibold mb-2">
             Shop by Category
@@ -303,91 +394,139 @@ export default async function HomePage() {
             Find exactly what your body needs
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {categories.slice(0, 6).map((cat) => {
-              // Map category slug to a specific curated image
-              // Falls back to a general herbal image for any unknown category
-              const CATEGORY_IMAGES: Record<
-                string,
-                { image: string; alt: string }
-              > = {
-                "natural-remedies": {
-                  image:
-                    "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=600&q=80",
-                  alt: "Herbal tincture bottles with dried herbs",
-                },
-                "food-spices": {
-                  image:
-                    "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&q=80",
-                  alt: "Colourful natural food spices",
-                },
-                "beauty-skincare": {
-                  image:
-                    "https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=600&q=80",
-                  alt: "Natural beauty and skincare products",
-                },
-                "wellness-solutions": {
-                  image:
-                    "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&q=80",
-                  alt: "Holistic wellness products",
-                },
-                "natural-aphrodisiacs": {
-                  image:
-                    "https://images.unsplash.com/photo-1515023115689-589c33041d3c?w=600&q=80",
-                  alt: "Natural herbal aphrodisiac products",
-                },
-                gorontula: {
-                  image:
-                    "https://images.unsplash.com/photo-1509358271058-acd22cc93898?w=600&q=80",
-                  alt: "Gorontula seeds and herbal syrup",
-                },
-              };
+          <div className="relative bg-brand-cream/70 rounded-2xl p-4">
+            <HorizontalScrollCarousel
+              ariaLabel="Shop by category"
+              gap={16}
+              arrowSize="md"
+              contentClassName="gap-4 px-1"
+            >
+              {categories.slice(0, 6).map((cat) => {
+                // Map category slug to a specific curated image
+                // Falls back to a general herbal image for any unknown category
+                const CATEGORY_IMAGES: Record<
+                  string,
+                  { image: string; alt: string }
+                > = {
+                  "remedies": {
+                    image:
+                      "/remedy.jpeg",
+                    alt: "Herbal tincture bottles with dried herbs",
+                  },
+                  "spices": {
+                    image:
+                      "/spices.jpeg",
+                    alt: "Colourful natural food spices",
+                  },
+                  "gorontula": {
+                    image:
+                      "/skincare.jpeg",
+                    alt: "Natural beauty and skincare products",
+                  },
+                  "oil": {
+                    image:
+                      "/oils-cat.jpeg",
+                    alt: "Holistic wellness products",
+                  },
+                  "seeds": {
+                    image:
+                      "/seeds.jpeg",
+                    alt: "Natural herbal aphrodisiac products",
+                  },
+                  "books": {
+                    image:
+                      "/books.jpeg",
+                    alt: "Islamic books and materials",
+                  },
+                };
 
-              const media = CATEGORY_IMAGES[cat.slug] ?? {
-                image:
-                  "https://images.unsplash.com/photo-1498579809087-ef1e558fd1da?w=600&q=80",
-                alt: "Natural herbal wellness products",
-              };
+                const media = CATEGORY_IMAGES[cat.slug] ?? {
+                  image:
+                    "https://images.unsplash.com/photo-1498579809087-ef1e558fd1da?w=600&q=80",
+                  alt: "Natural herbal wellness products",
+                };
 
-              return (
-                <Link
-                  key={cat.id}
-                  href={`/shop?category=${cat.slug}`}
-                  className="group relative bg-white rounded-2xl border border-border overflow-hidden hover:border-brand-green hover:shadow-card transition-all duration-300"
-                >
-                  {/* Image */}
-                  <div className="relative h-36 sm:h-44 overflow-hidden">
-                    <Image
-                      src={media.image}
-                      alt={media.alt}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {/* Dark gradient overlay for text legibility */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                return (
+                  <div key={cat.id}>
+                    <Link
+                      href={`/shop?category=${cat.slug}`}
+                      className="group"
+                    >
+                      {/* Image */}
+                      <div className="relative shrink-0 aspect-square w-48 md:w-56 lg:w-64">
+                        <Image
+                          src={media.image}
+                          alt={media.alt}
+                          fill
+                          sizes="100vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        {/* Dark gradient overlay for text legibility */}
+                        {/* <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" /> */}
 
-                    {/* Category name overlaid on image */}
-                    <div className="absolute bottom-0 inset-x-0 p-3">
-                      <h3 className="font-semibold text-white text-sm leading-tight">
-                        {cat.name}
-                      </h3>
-                      {cat.description && (
-                        <p className="text-white/70 text-xs mt-0.5 line-clamp-1">
-                          {cat.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Arrow icon — appears on hover */}
-                    <div className="absolute top-3 right-3 h-7 w-7 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:bg-brand-green">
-                      <ArrowRight className="h-3.5 w-3.5 text-white" />
-                    </div>
+                        {/* Category name overlaid on image */}
+                        
+                        {/* Arrow icon — appears on hover */}
+                        {/* <div className="absolute top-3 right-3 h-7 w-7 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:bg-brand-green">
+                          <ArrowRight className="h-3.5 w-3.5 text-white" />
+                        </div> */}
+                      </div>
+                    </Link>
+                    <h3 className="font-semibold mt-4 text-center text-black text-sm leading-tight">
+                      {cat.name}
+                    </h3>
                   </div>
-                </Link>
-              );
-            })}
+                );
+              })}
+            </HorizontalScrollCarousel>
           </div>
+        </div>
+      </section>
+
+      {/* ── Categories Products Preview ─────────────────────────────────────────────────── */}
+      <section className="pb-12 md:pb-16 bg-white">
+        <div className="container-safe">
+          {categories.slice(0, 6).map((cat) => (          
+              <div key={cat.id} className="relative bg-linear-to-br from-brand-green via-brand-green to-brand-green-dark rounded-2xl px-4 py-8 mt-6 overflow-hidden">
+                {/* Decorative circles */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3 z-0" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4 z-0" />
+                <div className="relative flex items-center justify-between mb-4 z-10">
+                  <div>
+                    <h2 className="font-display text-white text-xl md:text-2xl font-semibold">
+                      Shop {cat.name}
+                    </h2>
+                  </div>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="hidden sm:flex"
+                  >
+                    <Link href={`/shop?category=${cat.slug}`}>
+                      View all <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                </div>
+
+                <hr className="h-0.75 w-full bg-brand-green-dark rounded-full mb-8"/>
+
+                <div className="relative grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 z-10">
+                  {(categoryProducts[cat.slug] ?? []).length > 0 ? (
+                    (categoryProducts[cat.slug] ?? []).map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))
+                  ) : (
+                    <div className="col-span-4 flex flex-col items-center gap-4">
+                      <p className="text-white/90 text-center">Products coming soon.</p>
+                      <Button asChild size="sm" className="bg-white text-brand-green">
+                        <Link href={`/shop?category=${cat.slug}`}>Browse {cat.name}</Link>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+            </div>
+          ))}
         </div>
       </section>
 
