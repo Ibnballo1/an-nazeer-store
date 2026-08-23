@@ -24,14 +24,17 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://an-nazeer.com",
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://an-nazeer.com"
   ),
+
   title: {
     default: "An-Nazeer Holistic Home | Natural Herbal Wellness Nigeria",
     template: "%s | An-Nazeer Holistic Home",
   },
+
   description:
     "Nigeria's trusted herbal wellness brand. NAFDAC-approved natural remedies, food spices, beauty products, and health consultations. Shop online, delivered nationwide.",
+
   keywords: [
     "herbal wellness Nigeria",
     "NAFDAC approved herbal products",
@@ -42,7 +45,43 @@ export const metadata: Metadata = {
     "natural aphrodisiacs Nigeria",
     "herbal food spices",
   ],
-  authors: [{ name: "An-Nazeer Holistic Home Ltd" }],
+
+  icons: {
+    icon: [
+      {
+        url: "/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/icon-16x16.png",
+        sizes: "16x16",
+        type: "image/png",
+      },
+      {
+        url: "/icon-32x32.png",
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: "/icon-48x48.png",
+        sizes: "48x48",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+    shortcut: ["/favicon.ico"],
+  },
+  authors: [
+    {
+      name: "An-Nazeer Holistic Home Ltd",
+    },
+  ],
   creator: "An-Nazeer Holistic Home Ltd",
   publisher: "An-Nazeer Holistic Home Ltd",
   robots: {
@@ -63,9 +102,9 @@ export const metadata: Metadata = {
       "NAFDAC-approved herbal products, natural remedies, beauty solutions and health consultations. Delivered across Nigeria.",
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
+        url: "/icon-512x512.png",
+        width: 512,
+        height: 512,
         alt: "An-Nazeer Holistic Home — Natural Herbal Wellness",
       },
     ],
@@ -73,8 +112,9 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "An-Nazeer Holistic Home | Natural Herbal Wellness Nigeria",
-    description: "NAFDAC-approved herbal products delivered across Nigeria.",
-    images: ["/og-image.png"],
+    description:
+      "NAFDAC-approved herbal products delivered across Nigeria.",
+    images: ["/icon-512x512.png"],
   },
   alternates: {
     canonical: "/",

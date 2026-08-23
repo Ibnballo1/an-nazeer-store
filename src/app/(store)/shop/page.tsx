@@ -36,6 +36,7 @@ export default async function ShopPage({ searchParams }: Props) {
   ]);
 
   const activeCategory = categories.find((c) => c.slug === categorySlug);
+  console.log(categories, "categories");
 
   return (
     <div className="container-safe py-8 md:py-10">
