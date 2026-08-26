@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 const products = [
-  {id: 1, img: "/spice-hero.jpeg", slug: "spice-hero"},
-  {id: 2, img: "/oil-hero.jpeg", slug: "oil-hero"},
-  {id: 3, img: "/herb-hero.jpeg", slug: "herb-hero"},
-  {id: 4, img: "/seeds-hero.jpeg", slug: "seeds-hero"},
-  {id: 5, img: "/beauty-hero.jpeg", slug: "beauty-hero"},
+  {id: 1, img: "/images/heros/spice-hero.jpeg", slug: "spice-hero"},
+  {id: 2, img: "/images/heros/oil-hero.jpeg", slug: "oil-hero"},
+  {id: 3, img: "/images/heros/herb-hero.jpeg", slug: "herb-hero"},
+  {id: 4, img: "/images/heros/seeds-hero.jpeg", slug: "seeds-hero"},
+  {id: 5, img: "/images/heros/beauty-hero.jpeg", slug: "beauty-hero"},
 ];
 
 const AUTOPLAY_DELAY = 5000; // 5 seconds

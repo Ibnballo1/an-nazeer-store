@@ -39,27 +39,27 @@ export const revalidate = 60;
 const sponsoredProducts = [
   {
     id: 1,
-    img: "/fibroid.jpeg",
+    img: "/images/sponsored/fibroid.jpeg",
     slug: "shop/fibroid-treatment",
   },
   {
     id: 2,
-    img: "/prostate.jpeg",
+    img: "/images/sponsored/prostate.jpeg",
     slug: "shop/postrate-treatment",
   },
   {
     id: 3,
-    img: "/hepatitis.jpeg",
+    img: "/images/sponsored/hepatitis.jpeg",
     slug: "shop/hepatitis-package",
   },
   {
     id: 4,
-    img: "/ovarian.jpeg",
+    img: "/images/sponsored/ovarian.jpeg",
     slug: "shop/ovarian-cyst-package",
   },
   {
     id: 5,
-    img: "/totalrelief.jpeg",
+    img: "/images/sponsored/totalrelief.jpeg",
     slug: "shop/total-relief-formula",
   },
 ];
@@ -410,32 +410,32 @@ export default async function HomePage() {
                 > = {
                   "remedies": {
                     image:
-                      "/remedy.jpeg",
+                      "/images/categories/remedy.jpeg",
                     alt: "Herbal tincture bottles with dried herbs",
                   },
                   "spices": {
                     image:
-                      "/spices.jpeg",
+                      "/images/categories/spices.jpeg",
                     alt: "Colourful natural food spices",
                   },
                   "gorontula": {
                     image:
-                      "/skincare.jpeg",
+                      "/images/categories/skincare.jpeg",
                     alt: "Natural beauty and skincare products",
                   },
                   "oil": {
                     image:
-                      "/oils-cat.jpeg",
+                      "/images/categories/oils-cat.jpeg",
                     alt: "Holistic wellness products",
                   },
                   "seeds": {
                     image:
-                      "/seeds.jpeg",
+                      "/images/categories/seeds.jpeg",
                     alt: "Natural herbal aphrodisiac products",
                   },
                   "books": {
                     image:
-                      "/books.jpeg",
+                      "/images/categories/books.jpeg",
                     alt: "Islamic books and materials",
                   },
                 };
