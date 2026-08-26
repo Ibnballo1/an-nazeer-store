@@ -1,6 +1,5 @@
 // src/app/(store)/page.tsx
 
-import { Suspense } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,7 +19,6 @@ import {
   Star,
   Truck,
   ArrowRight,
-  Phone,
   MessageCircle,
 } from "lucide-react";
 import { getActiveTestimonials } from "@/lib/actions/testimonials";
@@ -511,7 +509,7 @@ export default async function HomePage() {
 
                 <hr className="h-0.75 w-full bg-brand-green-dark rounded-full mb-8"/>
 
-                <div className="relative grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 z-10">
+                <div className="relative hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 z-10">
                   {(categoryProducts[cat.slug] ?? []).length > 0 ? (
                     (categoryProducts[cat.slug] ?? []).map((product) => (
                       <ProductCard key={product.id} product={product} />
@@ -524,6 +522,40 @@ export default async function HomePage() {
                       </Button>
                     </div>
                   )}
+                </div>
+
+                <div className="relative sm:hidden">
+                  <HorizontalScrollCarousel
+                    ariaLabel={`Products in ${cat.name}`}
+                    gap={16}
+                    arrowSize="md"
+                    contentClassName="gap-4 px-1"
+                  >
+                  {(categoryProducts[cat.slug] ?? []).length > 0 ? (
+                    (categoryProducts[cat.slug] ?? []).map((product) => (
+                      <div key={product.id} className="relative shrink-0 w-48 bg-black/5 rounded-2xl overflow-hidden">
+                        <ProductCard product={product} />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-4 flex flex-col items-center gap-4">
+                      <p className="text-white/90 text-center">Products coming soon.</p>
+                      <Button asChild size="sm" className="bg-white text-brand-green">
+                        <Link href={`/shop?category=${cat.slug}`}>Browse {cat.name}</Link>
+                      </Button>
+                    </div>
+                  )}
+                  </HorizontalScrollCarousel>
+                </div>
+
+                <hr className="block sm:hidden h-0.75 w-full bg-brand-green-dark rounded-full my-8"/>
+
+                <div className="flex justify-center sm:hidden">
+                  <Button asChild variant="outline">
+                    <Link href={`/shop?category=${cat.slug}`}>
+                      View all <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
                 </div>
             </div>
           ))}
