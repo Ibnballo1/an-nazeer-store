@@ -9,6 +9,18 @@ import { slugify } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, PaginatedResult } from "@/types";
 import type { Product } from "@/db/schema";
+import { getPickupLocation } from "@/lib/actions/pickup-location";
+import type { PickupLocation } from "@/lib/pickup-locations";
+
+function applyPickupPrice<T extends Product>(
+  product: T,
+  location: PickupLocation,
+): T {
+  return {
+    ...product,
+    price: location === "OGBA" ? product.ogbaPrice : product.alagbadoPrice,
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC — Get paginated products for shop page
@@ -25,6 +37,7 @@ export async function getProducts(opts: {
   const page = Math.max(1, opts.page ?? 1);
   const pageSize = Math.min(48, opts.pageSize ?? 12);
   const offset = (page - 1) * pageSize;
+  const pickupLocation = await getPickupLocation();
 
   const conditions = [
     eq(products.status, "active"),
@@ -51,9 +64,17 @@ export async function getProducts(opts: {
   const orderBy = (() => {
     switch (opts.sort) {
       case "price-asc":
-        return asc(products.price);
+        return asc(
+          pickupLocation === "OGBA"
+            ? products.ogbaPrice
+            : products.alagbadoPrice,
+        );
       case "price-desc":
-        return desc(products.price);
+        return desc(
+          pickupLocation === "OGBA"
+            ? products.ogbaPrice
+            : products.alagbadoPrice,
+        );
       case "popular":
         return desc(products.isBestSeller);
       default:
@@ -82,7 +103,7 @@ export async function getProducts(opts: {
   ]);
 
   return {
-    data: rows,
+    data: rows.map((product) => applyPickupPrice(product, pickupLocation)),
     total: count,
     page,
     pageSize,
@@ -95,6 +116,7 @@ export async function getProducts(opts: {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getProductBySlug(slug: string) {
+  const pickupLocation = await getPickupLocation();
   const product = await db.query.products.findFirst({
     where: and(
       eq(products.slug, slug),
@@ -111,7 +133,7 @@ export async function getProductBySlug(slug: string) {
     },
   });
 
-  return product ?? null;
+  return product ? applyPickupPrice(product, pickupLocation) : null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,6 +141,7 @@ export async function getProductBySlug(slug: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getFeaturedProducts(limit = 8) {
+  const pickupLocation = await getPickupLocation();
   const featured = await db.query.products.findMany({
     where: and(
       eq(products.status, "active"),
@@ -130,7 +153,9 @@ export async function getFeaturedProducts(limit = 8) {
     with: { category: true },
   });
 
-  if (featured.length >= limit) return featured;
+  if (featured.length >= limit) {
+    return featured.map((product) => applyPickupPrice(product, pickupLocation));
+  }
 
   const featuredIds = new Set(featured.map((p) => p.id));
 
@@ -146,7 +171,9 @@ export async function getFeaturedProducts(limit = 8) {
   });
 
   const extras = bestSellers.filter((p) => !featuredIds.has(p.id));
-  return [...featured, ...extras].slice(0, limit);
+  return [...featured, ...extras]
+    .slice(0, limit)
+    .map((product) => applyPickupPrice(product, pickupLocation));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,7 +181,9 @@ export async function getFeaturedProducts(limit = 8) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getBestSellerProducts(limit = 4) {
-  return db.query.products.findMany({
+  const [pickupLocation, rows] = await Promise.all([
+    getPickupLocation(),
+    db.query.products.findMany({
     where: and(
       eq(products.status, "active"),
       eq(products.isBestSeller, true),
@@ -163,7 +192,9 @@ export async function getBestSellerProducts(limit = 4) {
     orderBy: [desc(products.createdAt)],
     limit,
     with: { category: true },
-  });
+    }),
+  ]);
+  return rows.map((product) => applyPickupPrice(product, pickupLocation));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -206,7 +237,9 @@ export async function createProduct(
       .values({
         ...data,
         slug: finalSlug,
-        price: String(data.price),
+        price: String(data.alagbadoPrice),
+        alagbadoPrice: String(data.alagbadoPrice),
+        ogbaPrice: String(data.ogbaPrice),
         comparePrice: data.comparePrice ? String(data.comparePrice) : null,
         costPrice: data.costPrice ? String(data.costPrice) : null,
         weight: data.weight ? String(data.weight) : null,
@@ -240,7 +273,12 @@ export async function updateProduct(
       updatedAt: new Date(),
     };
 
-    if (input.price !== undefined) updateData.price = String(input.price);
+    if (input.alagbadoPrice !== undefined) {
+      updateData.alagbadoPrice = String(input.alagbadoPrice);
+      updateData.price = String(input.alagbadoPrice);
+    }
+    if (input.ogbaPrice !== undefined)
+      updateData.ogbaPrice = String(input.ogbaPrice);
     if (input.comparePrice !== undefined)
       updateData.comparePrice = input.comparePrice
         ? String(input.comparePrice)

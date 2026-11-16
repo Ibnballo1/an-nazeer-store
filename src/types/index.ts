@@ -17,6 +17,7 @@ export type Cart = {
   items: CartItem[];
   subtotal: number;
   itemCount: number;
+  pickupLocation: "ALAGBADO" | "OGBA";
 };
 
 export type PaginatedResult<T> = {

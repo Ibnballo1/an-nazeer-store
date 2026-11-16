@@ -73,9 +73,9 @@ export function ProductGallery({ images, name }: Props) {
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
+              className={`relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
                 i === active
-                  ? "border-[#0f7a3a] opacity-100"
+                  ? "border-brand-green opacity-100"
                   : "border-transparent opacity-60 hover:opacity-80"
               }`}
             >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +15,9 @@ import { toast } from "sonner";
 import { formatNaira, calculateShippingFee } from "@/lib/utils";
 import { Loader2, ShieldCheck, MessageCircle } from "lucide-react";
 import type { Cart } from "@/types";
+import { PickupLocationSelector } from "@/components/layout/pickup-location-selector";
+import { setPickupLocation } from "@/lib/actions/pickup-location";
+import { PICKUP_LOCATION_DETAILS, type PickupLocation } from "@/lib/pickup-locations";
 
 // Check if WhatsApp mode is enabled (defaulting to 'whatsapp' or 'paystack')
 const CHECKOUT_MODE = process.env.NEXT_PUBLIC_CHECKOUT_MODE || "whatsapp";
@@ -63,6 +66,8 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
   const router = useRouter();
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pickupLocation, setSelectedPickupLocation] = useState<PickupLocation>(cart.pickupLocation);
+  const [, startLocationUpdate] = useTransition();
 
   const form = useForm<ShippingInput>({
     resolver: zodResolver(shippingSchema),
@@ -81,6 +86,14 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
   const shippingFee = calculateShippingFee(watchedState);
   const total = cart.subtotal + shippingFee;
 
+  function changePickupLocation(location: PickupLocation) {
+    setSelectedPickupLocation(location);
+    startLocationUpdate(async () => {
+      await setPickupLocation(location);
+      router.refresh();
+    });
+  }
+
   async function onSubmit(shipping: ShippingInput) {
     setLoading(true);
 
@@ -88,6 +101,7 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
       // 1. Create order
       const orderResult = await createOrder({
         shipping,
+        pickupLocation,
         items: cart.items.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
@@ -256,6 +270,17 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-border p-6 sticky top-24">
             <h2 className="font-semibold text-base mb-5">Order Summary</h2>
+
+            <div className="mb-5 rounded-xl bg-brand-cream/70 p-3 space-y-2">
+              <p className="text-xs font-semibold text-foreground">Pickup location</p>
+              <PickupLocationSelector
+                initialLocation={pickupLocation}
+                onLocationChange={changePickupLocation}
+              />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {PICKUP_LOCATION_DETAILS[pickupLocation].address}
+              </p>
+            </div>
 
             {/* Items */}
             <div className="space-y-3 mb-5">

@@ -208,6 +208,9 @@ export const products = pgTable(
     shortDescription: varchar("short_description", { length: 500 }),
 
     // Pricing (stored as numeric to avoid float issues — NGN kobo precision)
+    alagbadoPrice: numeric("alagbado_price", { precision: 12, scale: 2 }).notNull(),
+    ogbaPrice: numeric("ogba_price", { precision: 12, scale: 2 }).notNull(),
+    // Legacy/base price retained for existing integrations; kept equal to Alagbado.
     price: numeric("price", { precision: 12, scale: 2 }).notNull(),
     comparePrice: numeric("compare_price", { precision: 12, scale: 2 }), // Original/struck-through price
     costPrice: numeric("cost_price", { precision: 12, scale: 2 }), // Internal use
@@ -295,6 +298,10 @@ export const orders = pgTable(
     shippingCountry: varchar("shipping_country", { length: 100 })
       .notNull()
       .default("Nigeria"),
+    pickupLocation: varchar("pickup_location", { length: 20 })
+      .$type<"ALAGBADO" | "OGBA">()
+      .notNull()
+      .default("ALAGBADO"),
 
     // Totals (NGN)
     subtotal: numeric("subtotal", { precision: 12, scale: 2 }).notNull(),

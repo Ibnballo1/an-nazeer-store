@@ -47,7 +47,7 @@ export function AdminProductsTable({ products }: Props) {
             placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f7a3a]/30 focus:border-[#0f7a3a] bg-stone-50"
+            className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green bg-stone-50"
           />
         </div>
       </div>
@@ -114,7 +114,7 @@ export function AdminProductsTable({ products }: Props) {
                             {product.name}
                           </p>
                           {product.isCertified && (
-                            <span className="text-[10px] text-[#0f7a3a] font-semibold">
+                            <span className="text-[10px] text-brand-green font-semibold">
                               NAFDAC
                             </span>
                           )}
@@ -122,12 +122,8 @@ export function AdminProductsTable({ products }: Props) {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-stone-900">
-                      ₦{Number(product.price).toLocaleString()}
-                      {product.comparePrice && (
-                        <span className="block text-xs text-stone-400 font-normal line-through">
-                          ₦{Number(product.comparePrice).toLocaleString()}
-                        </span>
-                      )}
+                      <span className="block text-xs">Alagbado: ₦{Number(product.alagbadoPrice).toLocaleString()}</span>
+                      <span className="block text-xs text-stone-500 font-normal">Ogba: ₦{Number(product.ogbaPrice).toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -166,7 +162,7 @@ export function AdminProductsTable({ products }: Props) {
                         </Link>
                         <Link
                           href={`/admin/products/${product.id}/edit`}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg text-stone-400 hover:text-[#0f7a3a] hover:bg-[#0f7a3a]/10 transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-stone-400 hover:text-brand-green hover:bg-brand-green/10 transition-colors"
                           title="Edit"
                         >
                           <Pencil className="w-4 h-4" />

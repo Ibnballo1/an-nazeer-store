@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
 import { formatNaira } from "@/lib/utils";
+import { PICKUP_LOCATION_DETAILS, type PickupLocation } from "@/lib/pickup-locations";
 import {
   ShieldCheck,
   Leaf,
@@ -24,9 +25,9 @@ type ProductWithRelations = Product & {
   reviews: Review[];
 };
 
-type Props = { product: ProductWithRelations };
+type Props = { product: ProductWithRelations; pickupLocation: PickupLocation };
 
-export function ProductDetail({ product }: Props) {
+export function ProductDetail({ product, pickupLocation }: Props) {
   const [qty, setQty] = useState(1);
   const [imgIdx, setImgIdx] = useState(0);
 
@@ -182,6 +183,9 @@ export function ProductDetail({ product }: Props) {
               </span>
             )}
           </div>
+          <p className="text-xs text-muted-foreground">
+            Price for {PICKUP_LOCATION_DETAILS[pickupLocation].label} pickup
+          </p>
 
           {/* Short description */}
           {product.shortDescription && (

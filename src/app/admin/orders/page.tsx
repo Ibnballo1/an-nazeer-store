@@ -72,6 +72,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                   "Order #",
                   "Customer",
                   "Items",
+                  "Pickup",
                   "Total",
                   "Status",
                   "Payment",
@@ -91,7 +92,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               {result.data.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="text-center py-12 text-muted-foreground text-sm"
                   >
                     No orders found.
@@ -117,6 +118,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                     <td className="px-5 py-3 text-xs text-muted-foreground">
                       {order.items.length} item
                       {order.items.length !== 1 ? "s" : ""}
+                    </td>
+                    <td className="px-5 py-3 text-xs font-medium text-muted-foreground">
+                      {order.pickupLocation}
                     </td>
                     <td className="px-5 py-3 font-semibold text-xs">
                       {formatNaira(order.total)}

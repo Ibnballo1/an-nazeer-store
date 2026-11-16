@@ -135,9 +135,17 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-brand-green mt-1 shrink-0" />
-                <span className="text-sm text-white/60 leading-relaxed max-w-[250px]">
+                <span className="text-sm text-white/60 leading-relaxed max-w-62.5">
+                  <strong className="text-white/80">Alagbado branch:</strong>{" "}
                   Shop 664, Adura Bustop, Abeokuta Express Way, Beside Heyden
                   Filling Station, Lagos.
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 text-brand-green mt-1 shrink-0" />
+                <span className="text-sm text-white/60 leading-relaxed max-w-62.5">
+                  <strong className="text-white/80">Ogba branch:</strong>{" "}
+                  No. 1, Dada Street off Moyo agoro off Ifakojaiye Ogba, Lagos.
                 </span>
               </li>
             </ul>

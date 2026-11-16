@@ -63,7 +63,7 @@ export function AdminOrdersTable({ orders }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search orders..."
-            className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0f7a3a]/30 bg-stone-50"
+            className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-green/30 bg-stone-50"
           />
         </div>
       </div>
@@ -74,6 +74,7 @@ export function AdminOrdersTable({ orders }: Props) {
               {[
                 "Order",
                 "Customer",
+                "Pickup",
                 "Total",
                 "Status",
                 "Payment",
@@ -105,6 +106,9 @@ export function AdminOrdersTable({ orders }: Props) {
                   <p className="text-xs text-stone-500">
                     {order.shippingEmail}
                   </p>
+                </td>
+                <td className="px-6 py-4 text-xs font-medium text-stone-600">
+                  {order.pickupLocation}
                 </td>
                 <td className="px-6 py-4 text-sm font-bold text-stone-900">
                   ₦{Number(order.total).toLocaleString()}
@@ -145,7 +149,7 @@ export function AdminOrdersTable({ orders }: Props) {
                         )
                       }
                       disabled={isPending}
-                      className="appearance-none bg-stone-50 border border-stone-200 rounded-lg pl-3 pr-8 py-1.5 text-xs font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#0f7a3a]/30 cursor-pointer disabled:opacity-50"
+                      className="appearance-none bg-stone-50 border border-stone-200 rounded-lg pl-3 pr-8 py-1.5 text-xs font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-brand-green/30 cursor-pointer disabled:opacity-50"
                     >
                       {ORDER_STATUSES.map((s) => (
                         <option key={s} value={s}>

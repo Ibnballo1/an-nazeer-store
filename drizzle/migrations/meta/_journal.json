@@ -22,6 +22,13 @@
       "when": 1774296323039,
       "tag": "0002_special_typhoid_mary",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794850007089,
+      "tag": "0003_location_based_pricing",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,8 @@ import { CartItems } from "./cart-items";
 import { Button } from "@/components/ui/button";
 import { formatNaira, calculateShippingFee } from "@/lib/utils";
 import { ShoppingBag, ArrowRight } from "lucide-react";
+import { PickupLocationSelector } from "@/components/layout/pickup-location-selector";
+import { PICKUP_LOCATION_DETAILS } from "@/lib/pickup-locations";
 
 export const metadata: Metadata = { title: "Your Cart" };
 
@@ -46,13 +48,21 @@ export default async function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2">
-          <CartItems initialCart={cart} />
+          <CartItems key={cart.pickupLocation} initialCart={cart} />
         </div>
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-border p-6 sticky top-24">
             <h2 className="font-semibold text-lg mb-5">Order Summary</h2>
+
+            <div className="mb-5 rounded-xl bg-brand-cream/70 p-3 space-y-2">
+              <p className="text-xs font-semibold text-foreground">Pickup location</p>
+              <PickupLocationSelector initialLocation={cart.pickupLocation} />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {PICKUP_LOCATION_DETAILS[cart.pickupLocation].address}
+              </p>
+            </div>
 
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
