@@ -71,7 +71,7 @@ export default async function CartPage() {
                   {formatNaira(cart.subtotal)}
                 </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between line-through text-muted-foreground">
                 <span className="text-muted-foreground">Shipping (est.)</span>
                 <span className="font-medium">
                   {estimatedShipping === 0 ? (
