@@ -33,7 +33,8 @@ export function ProductForm({ product, categories }: Props) {
           categoryId: product.categoryId ?? undefined,
           shortDescription: product.shortDescription ?? "",
           description: product.description ?? "",
-          price: Number(product.price),
+          alagbadoPrice: Number(product.alagbadoPrice),
+          ogbaPrice: Number(product.ogbaPrice),
           comparePrice: product.comparePrice
             ? Number(product.comparePrice)
             : undefined,
@@ -55,7 +56,8 @@ export function ProductForm({ product, categories }: Props) {
         }
       : {
           name: "",
-          price: 0,
+          alagbadoPrice: 0,
+          ogbaPrice: 0,
           stock: 0,
           status: "draft",
           isCertified: false,
@@ -286,26 +288,43 @@ export function ProductForm({ product, categories }: Props) {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label>Price (₦) *</Label>
+            <Label>Alagbado price (₦) *</Label>
             <Input
               type="number"
               step="0.01"
               placeholder="5500"
-              {...form.register("price", { valueAsNumber: true })}
+              {...form.register("alagbadoPrice", { valueAsNumber: true })}
             />
-            {errors.price && (
-              <p className="text-xs text-destructive">{errors.price.message}</p>
+            {errors.alagbadoPrice && (
+              <p className="text-xs text-destructive">
+                {errors.alagbadoPrice.message}
+              </p>
             )}
           </div>
           <div className="space-y-1.5">
-            <Label>Compare price (₦)</Label>
+            <Label>Ogba price (₦) *</Label>
             <Input
               type="number"
               step="0.01"
-              placeholder="7000"
-              {...form.register("comparePrice", { valueAsNumber: true })}
+              placeholder="5500"
+              {...form.register("ogbaPrice", { valueAsNumber: true })}
             />
+            {errors.ogbaPrice && (
+              <p className="text-xs text-destructive">
+                {errors.ogbaPrice.message}
+              </p>
+            )}
           </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Compare price (₦)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            placeholder="7000"
+            {...form.register("comparePrice", { valueAsNumber: true })}
+          />
         </div>
 
         <div className="space-y-1.5">

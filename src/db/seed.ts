@@ -67,6 +67,8 @@ async function seed() {
       description:
         "Our signature Gorontula syrup, carefully extracted from premium seeds. Rich in natural nutrients and traditionally used for energy, vitality, and overall wellness.",
       price: "5500.00",
+      alagbadoPrice: "5500.00",
+      ogbaPrice: "5500.00",
       comparePrice: "7000.00",
       stock: 50,
       isFeatured: true,
@@ -91,6 +93,8 @@ async function seed() {
       description:
         "A scientifically formulated blend of potent herbs to support and strengthen your immune system naturally.",
       price: "3800.00",
+      alagbadoPrice: "3800.00",
+      ogbaPrice: "3800.00",
       comparePrice: "4500.00",
       stock: 75,
       isFeatured: true,

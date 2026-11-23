@@ -15,7 +15,7 @@ export default async function CheckoutPage() {
       <h1 className="font-display text-2xl md:text-3xl font-semibold mb-8">
         Checkout
       </h1>
-      <CheckoutForm cart={cart} />
+      <CheckoutForm key={cart.pickupLocation} cart={cart} />
     </div>
   );
 }

@@ -237,6 +237,7 @@ export async function initWhatsAppCheckout(
 *Order ID:* #${order.orderNumber}
 *Customer:* ${order.shippingName}
 *Phone:* ${order.shippingPhone}
+*Pickup Location:* ${order.pickupLocation}
 *Delivery Address:* ${order.shippingAddress}, ${order.shippingCity}, ${order.shippingState}
 
 *Order Items:*

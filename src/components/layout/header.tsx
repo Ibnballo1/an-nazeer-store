@@ -3,10 +3,16 @@ import { getCart } from "@/lib/actions/cart";
 import { getCurrentUser } from "@/lib/server";
 import { UserMenu } from "./user-menu";
 import { MobileNav } from "./mobile-nav";
+import { PickupLocationSelector } from "./pickup-location-selector";
+import { getPickupLocation } from "@/lib/actions/pickup-location";
 import { ShoppingBag, Search, Leaf } from "lucide-react";
 
 export async function Header() {
-  const [cart, user] = await Promise.all([getCart(), getCurrentUser()]);
+  const [cart, user, pickupLocation] = await Promise.all([
+    getCart(),
+    getCurrentUser(),
+    getPickupLocation(),
+  ]);
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-soft">
@@ -48,6 +54,7 @@ export async function Header() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
+            <PickupLocationSelector initialLocation={pickupLocation} compact />
             <Link
               href="/shop"
               className="hidden md:flex h-9 w-9 items-center justify-center rounded-lg hover:bg-muted transition-colors"

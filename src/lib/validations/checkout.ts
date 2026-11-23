@@ -1,15 +1,21 @@
 import { z } from "zod";
 
 export const shippingSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Valid email required"),
-  phone: z.string().min(10, "Valid phone number required"),
-  address: z.string().min(5, "Address is required"),
-  city: z.string().min(2, "City is required"),
-  state: z.string().min(2, "State is required"),
-  country: z.string().default("Nigeria").optional(),
+  name: z.string().trim().min(2, "Full name is required"),
+  email: z
+    .string()
+    .optional()
+    .refine((value) => !value || z.string().email().safeParse(value).success, {
+      message: "Valid email required",
+    }),
+  phone: z.string().trim().min(10, "Valid phone number is required"),
+  address: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  state: z.string().trim().optional(),
+  country: z.string().trim().optional(),
 });
 
 export const guestCheckoutSchema = shippingSchema;
 
-export type ShippingInput = z.infer<typeof shippingSchema>;
+export type ShippingInput = z.input<typeof shippingSchema>;
+export type ShippingOutput = z.output<typeof shippingSchema>;

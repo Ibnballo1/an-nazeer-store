@@ -13,6 +13,12 @@ import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/types";
 import type { Order, NewOrder } from "@/db/schema";
 import type { ShippingInput } from "@/lib/validations/checkout";
+import { getPickupLocation } from "@/lib/actions/pickup-location";
+import {
+  getProductPriceForLocation,
+  isPickupLocation,
+  type PickupLocation,
+} from "@/lib/pickup-locations";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Create order (supports both authenticated users and guests)
@@ -20,6 +26,7 @@ import type { ShippingInput } from "@/lib/validations/checkout";
 
 export type CreateOrderInput = {
   shipping: ShippingInput;
+  pickupLocation?: PickupLocation;
   items: Array<{
     productId: string;
     quantity: number;
@@ -44,6 +51,14 @@ export async function createOrder(
 
   if (!input.items.length) {
     return { success: false, error: "Your cart is empty." };
+  }
+
+  const pickupLocation = input.pickupLocation ?? (await getPickupLocation());
+  if (!isPickupLocation(pickupLocation)) {
+    return { success: false, error: "Please select a valid pickup location." };
+  }
+  if (input.items.some((item) => !Number.isInteger(item.quantity) || item.quantity < 1)) {
+    return { success: false, error: "One or more quantities are invalid." };
   }
 
   // Get current session (may be null for guests)
@@ -84,7 +99,7 @@ export async function createOrder(
   // Calculate totals
   const subtotal = input.items.reduce((sum, item) => {
     const product = dbProducts.find((p) => p.id === item.productId)!;
-    return sum + Number(product.price) * item.quantity;
+    return sum + getProductPriceForLocation(product, pickupLocation) * item.quantity;
   }, 0);
 
   const shippingFee = calculateShippingFee(shippingParsed.data.state);
@@ -113,6 +128,7 @@ export async function createOrder(
           shippingCity: shipping.city,
           shippingState: shipping.state,
           shippingCountry: shipping.country ?? "Nigeria",
+          pickupLocation,
           // Totals
           subtotal: String(subtotal),
           shippingFee: String(shippingFee),
@@ -134,8 +150,10 @@ export async function createOrder(
             productImage: product.thumbnailUrl,
             productSlug: product.slug,
             quantity: item.quantity,
-            unitPrice: product.price,
-            subtotal: String(Number(product.price) * item.quantity),
+            unitPrice: String(getProductPriceForLocation(product, pickupLocation)),
+            subtotal: String(
+              getProductPriceForLocation(product, pickupLocation) * item.quantity,
+            ),
           };
         }),
       );
@@ -248,6 +266,7 @@ export async function getAllOrders(opts: {
         shippingName: true,
         shippingEmail: true,
         total: true,
+        pickupLocation: true,
         status: true,
         paymentStatus: true,
         createdAt: true,

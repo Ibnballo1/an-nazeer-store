@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,59 +12,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { formatNaira, calculateShippingFee } from "@/lib/utils";
+import { formatNaira } from "@/lib/utils";
 import { Loader2, ShieldCheck, MessageCircle } from "lucide-react";
 import type { Cart } from "@/types";
+import { PickupLocationSelector } from "@/components/layout/pickup-location-selector";
+import { setPickupLocation } from "@/lib/actions/pickup-location";
+import {
+  PICKUP_LOCATION_DETAILS,
+  type PickupLocation,
+} from "@/lib/pickup-locations";
 
 // Check if WhatsApp mode is enabled (defaulting to 'whatsapp' or 'paystack')
 const CHECKOUT_MODE = process.env.NEXT_PUBLIC_CHECKOUT_MODE || "whatsapp";
-
-const NIGERIAN_STATES = [
-  "Abia",
-  "Adamawa",
-  "Akwa Ibom",
-  "Anambra",
-  "Bauchi",
-  "Bayelsa",
-  "Benue",
-  "Borno",
-  "Cross River",
-  "Delta",
-  "Ebonyi",
-  "Edo",
-  "Ekiti",
-  "Enugu",
-  "FCT",
-  "Gombe",
-  "Imo",
-  "Jigawa",
-  "Kaduna",
-  "Kano",
-  "Katsina",
-  "Kebbi",
-  "Kogi",
-  "Kwara",
-  "Lagos",
-  "Nasarawa",
-  "Niger",
-  "Ogun",
-  "Ondo",
-  "Osun",
-  "Oyo",
-  "Plateau",
-  "Rivers",
-  "Sokoto",
-  "Taraba",
-  "Yobe",
-  "Zamfara",
-];
 
 export function CheckoutForm({ cart }: { cart: Cart }) {
   const router = useRouter();
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pickupLocation, setSelectedPickupLocation] =
+    useState<PickupLocation>(cart.pickupLocation);
+  const [, startLocationUpdate] = useTransition();
 
-  const form = useForm<ShippingInput>({
+  const form = useForm<ShippingInput, undefined, ShippingInput>({
     resolver: zodResolver(shippingSchema),
     defaultValues: {
       name: "",
@@ -77,9 +46,15 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
     },
   });
 
-  const watchedState = form.watch("state");
-  const shippingFee = calculateShippingFee(watchedState);
-  const total = cart.subtotal + shippingFee;
+  const total = cart.subtotal;
+
+  function changePickupLocation(location: PickupLocation) {
+    setSelectedPickupLocation(location);
+    startLocationUpdate(async () => {
+      await setPickupLocation(location);
+      router.refresh();
+    });
+  }
 
   async function onSubmit(shipping: ShippingInput) {
     setLoading(true);
@@ -88,15 +63,16 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
       // 1. Create order
       const orderResult = await createOrder({
         shipping,
-        items: cart.items.map((i) => ({
-          productId: i.productId,
-          quantity: i.quantity,
+        pickupLocation,
+        items: cart.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
         })),
         customerNote: note || undefined,
       });
 
       if (!orderResult.success) {
-        toast.error("Failed to create order 🌿");
+        toast.error(orderResult.error || "Failed to create order 🌿");
         return;
       }
 
@@ -138,7 +114,7 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl border border-border p-6">
             <h2 className="font-semibold text-base mb-5">
-              Shipping Information
+              Customer Information
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -147,6 +123,7 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
                 <Input
                   id="name"
                   placeholder="Amina Ibrahim"
+                  className="placeholder:text-gray-400"
                   {...form.register("name")}
                 />
                 {errors.name && (
@@ -157,11 +134,12 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">Email (optional)</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="you@example.com"
+                  className="placeholder:text-gray-400"
                   {...form.register("email")}
                 />
                 {errors.email && (
@@ -177,6 +155,7 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
                   id="phone"
                   type="tel"
                   placeholder="08012345678"
+                  className="placeholder:text-gray-400"
                   {...form.register("phone")}
                 />
                 {errors.phone && (
@@ -187,52 +166,33 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
               </div>
 
               <div className="sm:col-span-2 space-y-1.5">
-                <Label htmlFor="address">Delivery address *</Label>
+                <Label htmlFor="address">Delivery address (optional)</Label>
                 <Input
                   id="address"
                   placeholder="12 Botanical Gardens Street"
+                  className="placeholder:text-gray-400"
                   {...form.register("address")}
                 />
-                {errors.address && (
-                  <p className="text-xs text-destructive">
-                    {errors.address.message}
-                  </p>
-                )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="city">City *</Label>
+                <Label htmlFor="city">City (optional)</Label>
                 <Input
                   id="city"
                   placeholder="Lagos"
+                  className="placeholder:text-gray-400"
                   {...form.register("city")}
                 />
-                {errors.city && (
-                  <p className="text-xs text-destructive">
-                    {errors.city.message}
-                  </p>
-                )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="state">State *</Label>
-                <select
+                <Label htmlFor="state">State (optional)</Label>
+                <Input
                   id="state"
-                  className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="e.g. Lagos"
+                  className="placeholder:text-gray-400"
                   {...form.register("state")}
-                >
-                  <option value="">Select state</option>
-                  {NIGERIAN_STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-                {errors.state && (
-                  <p className="text-xs text-destructive">
-                    {errors.state.message}
-                  </p>
-                )}
+                />
               </div>
             </div>
           </div>
@@ -245,8 +205,8 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
             <Textarea
               placeholder="Any special instructions for your order…"
               value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="rounded-xl resize-none"
+              onChange={(event) => setNote(event.target.value)}
+              className="rounded-xl resize-none placeholder:text-gray-400"
               rows={3}
             />
           </div>
@@ -256,6 +216,19 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-border p-6 sticky top-24">
             <h2 className="font-semibold text-base mb-5">Order Summary</h2>
+
+            <div className="mb-5 rounded-xl bg-brand-cream/70 p-3 space-y-2">
+              <p className="text-xs font-semibold text-foreground">
+                Pickup location
+              </p>
+              <PickupLocationSelector
+                initialLocation={pickupLocation}
+                onLocationChange={changePickupLocation}
+              />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {PICKUP_LOCATION_DETAILS[pickupLocation].address}
+              </p>
+            </div>
 
             {/* Items */}
             <div className="space-y-3 mb-5">
@@ -274,22 +247,8 @@ export function CheckoutForm({ cart }: { cart: Cart }) {
               ))}
             </div>
 
-            <div className="border-t border-border pt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatNaira(cart.subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Shipping</span>
-                <span>
-                  {shippingFee === 0 ? (
-                    <span className="text-brand-green font-medium">Free</span>
-                  ) : (
-                    formatNaira(shippingFee)
-                  )}
-                </span>
-              </div>
-              <div className="border-t border-border pt-2 flex justify-between font-bold">
+            <div className="border-t border-border pt-4">
+              <div className="flex justify-between font-bold">
                 <span>Total</span>
                 <span className="text-brand-green">{formatNaira(total)}</span>
               </div>

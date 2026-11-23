@@ -45,7 +45,7 @@ export default async function OrderDetailPage({ params }: Props) {
       {/* Order header */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
-          <h1 className="font-display text-2xl font-bold font-mono text-brand-green">
+          <h1 className="text-2xl font-bold font-mono text-brand-green">
             {order.orderNumber}
           </h1>
           <p className="text-muted-foreground text-sm mt-0.5">
@@ -64,6 +64,10 @@ export default async function OrderDetailPage({ params }: Props) {
       </div>
 
       <div className="space-y-5">
+        <div className="bg-brand-green-light/50 rounded-xl border border-brand-green/20 px-4 py-3 text-sm">
+          <span className="font-semibold">Pickup location: </span>
+          {order.pickupLocation}
+        </div>
         {/* Order items */}
         <div className="bg-white rounded-2xl border border-border overflow-hidden">
           <div className="px-5 py-4 border-b border-border">

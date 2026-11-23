@@ -3,8 +3,10 @@
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import { products } from "@/db/schema";
-import { eq, isNull, and } from "drizzle-orm";
+import { eq, isNull, and, inArray } from "drizzle-orm";
 import type { Cart, CartItem, ActionResult } from "@/types";
+import { getPickupLocation } from "@/lib/actions/pickup-location";
+import { getProductPriceForLocation } from "@/lib/pickup-locations";
 
 const CART_COOKIE = "an-nazeer-cart";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -15,6 +17,7 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export async function getCart(): Promise<Cart> {
   const cookieStore = await cookies();
+  const pickupLocation = await getPickupLocation();
   const raw = cookieStore.get(CART_COOKIE)?.value;
 
   let items: CartItem[] = [];
@@ -27,10 +30,31 @@ export async function getCart(): Promise<Cart> {
     }
   }
 
+  const productIds = [...new Set(items.map((item) => item.productId))];
+  if (productIds.length) {
+    const currentProducts = await db.query.products.findMany({
+      where: and(inArray(products.id, productIds), isNull(products.deletedAt)),
+    });
+    const productMap = new Map(currentProducts.map((product) => [product.id, product]));
+    items = items.flatMap((item) => {
+      const product = productMap.get(item.productId);
+      if (!product) return [];
+      return [{
+        ...item,
+        name: product.name,
+        price: getProductPriceForLocation(product, pickupLocation),
+        image: product.thumbnailUrl,
+        slug: product.slug,
+        stock: product.stock,
+        unit: product.unit,
+      }];
+    });
+  }
+
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
-  return { items, subtotal, itemCount };
+  return { items, subtotal, itemCount, pickupLocation };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,6 +92,12 @@ export async function addToCart(
     return { success: false, error: "Product not found." };
   }
 
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    return { success: false, error: "Please choose a valid quantity." };
+  }
+
+  const pickupLocation = await getPickupLocation();
+
   const { items } = await getCart();
 
   const existingIndex = items.findIndex((i) => i.productId === productId);
@@ -90,7 +120,7 @@ export async function addToCart(
   const cartItem: CartItem = {
     productId,
     name: product.name,
-    price: Number(product.price),
+    price: getProductPriceForLocation(product, pickupLocation),
     quantity: newQty,
     image: product.thumbnailUrl,
     slug: product.slug,
@@ -115,7 +145,7 @@ export async function addToCart(
 
   return {
     success: true,
-    data: { items: updatedItems, subtotal, itemCount },
+    data: { items: updatedItems, subtotal, itemCount, pickupLocation },
   };
 }
 
@@ -158,7 +188,7 @@ export async function updateCartItem(
 
   return {
     success: true,
-    data: { items: updatedItems, subtotal, itemCount },
+    data: { items: updatedItems, subtotal, itemCount, pickupLocation: await getPickupLocation() },
   };
 }
 
@@ -180,7 +210,7 @@ export async function removeFromCart(
 
   return {
     success: true,
-    data: { items: updatedItems, subtotal, itemCount },
+    data: { items: updatedItems, subtotal, itemCount, pickupLocation: await getPickupLocation() },
   };
 }
 

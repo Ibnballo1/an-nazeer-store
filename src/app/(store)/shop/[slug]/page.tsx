@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getProductBySlug } from "@/lib/actions/products";
 import { ProductDetail } from "./product-detail";
+import { getPickupLocation } from "@/lib/actions/pickup-location";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -27,5 +28,6 @@ export default async function ProductPage({ params }: Props) {
 
   if (!product) notFound();
 
-  return <ProductDetail product={product} />;
+  const pickupLocation = await getPickupLocation();
+  return <ProductDetail product={product} pickupLocation={pickupLocation} />;
 }

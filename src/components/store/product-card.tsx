@@ -9,9 +9,10 @@ import type { Product } from "@/db/schema";
 type Props = { product: Product };
 
 export function ProductCard({ product }: Props) {
+  const activePrice = Number(product.price);
   const discount = product.comparePrice
     ? Math.round(
-        ((Number(product.comparePrice) - Number(product.price)) /
+        ((Number(product.comparePrice) - activePrice) /
           Number(product.comparePrice)) *
           100,
       )
